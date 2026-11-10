@@ -15,7 +15,7 @@ alter table public.ct_admins enable row level security;
 revoke all on public.ct_admins from anon, authenticated;
 
 create or replace function public.ct_eh_admin()
-returns boolean language sql stable security definer set search_path = public as $$
+returns boolean language sql stable security definer set search_path = public, extensions as $$
   select exists (select 1 from public.ct_admins where email = lower(coalesce(auth.jwt() ->> 'email', '')));
 $$;
 revoke all on function public.ct_eh_admin() from public;
@@ -34,7 +34,7 @@ insert into public.ct_config (id) values (1) on conflict do nothing;
 -- Pedidos.
 create table if not exists public.ct_pedidos (
   id uuid primary key default gen_random_uuid(),
-  codigo text not null unique default encode(gen_random_bytes(12), 'hex'),
+  codigo text not null unique default encode(extensions.gen_random_bytes(12), 'hex'),
   titulo text not null check (char_length(btrim(titulo)) between 1 and 120),
   tipo text not null default '' check (char_length(tipo) <= 60),
   cliente text not null default '' check (char_length(cliente) <= 120),
@@ -75,7 +75,7 @@ create or replace function public.ct_slug(t text) returns text language sql immu
     'áàãâäéèêëíìîïóòõôöúùûüçñ', 'aaaaaeeeeiiiiooooouuuucn'), '[^a-z0-9]+', '-', 'g'), '-'), 24);
 $$;
 create or replace function public.ct_novo_codigo()
-returns trigger language plpgsql security definer set search_path = public as $$
+returns trigger language plpgsql security definer set search_path = public, extensions as $$
 declare base text;
 begin
   base := ct_slug(nullif(split_part(btrim(new.cliente), ' ', 1), ''));
@@ -107,7 +107,7 @@ create or replace function public.ct_rotulo_etapa(e text) returns text language 
 $$;
 
 create or replace function public.ct_registrar()
-returns trigger language plpgsql security definer set search_path = public as $$
+returns trigger language plpgsql security definer set search_path = public, extensions as $$
 begin
   if tg_op = 'INSERT' then
     insert into ct_eventos (pedido_id, tipo, texto, feitos) values (new.id, 'criado', 'Pedido registrado', new.feitos);
@@ -158,7 +158,7 @@ create policy "admin config" on public.ct_config for all to authenticated using 
 
 -- O que o cliente vê, pelo código secreto do link. Nada de telefone, valor ou notas internas.
 create or replace function public.ct_pedido_publico(p_codigo text)
-returns json language sql stable security definer set search_path = public as $$
+returns json language sql stable security definer set search_path = public, extensions as $$
   select case when p.id is null then null else json_build_object(
     'titulo', p.titulo, 'tipo', p.tipo, 'cliente', split_part(btrim(p.cliente), ' ', 1),
     'quantidade', p.quantidade, 'feitos', p.feitos, 'etapa', p.etapa, 'envio', p.envio,
