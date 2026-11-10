@@ -99,30 +99,22 @@
     return d === 1 ? 'ontem' : `há ${d} dias`;
   }
 
-  const ETAPAS = [
-    { id: 'fila', nome: 'Na fila' },
-    { id: 'producao', nome: 'Em produção' },
-    { id: 'acabamento', nome: 'Acabamento' },
-    { id: 'pronto', nome: 'Pronto' },
-    { id: 'entregue', nome: 'Entregue' }
-  ];
-  const NOME_ETAPA = { fila: 'Na fila', producao: 'Em produção', pausado: 'Pausado', acabamento: 'Acabamento e embalagem', pronto: 'Pronto para entrega', entregue: 'Entregue', cancelado: 'Cancelado' };
+  const NOME_ESTUDIO = 'StudioCT 3D';
+  const ETAPAS = ['fila', 'producao', 'pronto', 'entregue'];
+  const NOME_ETAPA = { fila: 'Na fila', producao: 'Em produção', pronto: 'Pronto', entregue: 'Entregue', cancelado: 'Cancelado', pausado: 'Em produção', acabamento: 'Em produção' };
+  // Tipos de envio e o que o cliente vê em cada um.
+  const ENVIO = {
+    entrega: { nome: 'Entrega feita por nós', prazo: 'de 2 a 5 dias corridos após o término da produção', final: 'Entregue', prontoMsg: 'Seu pedido está pronto! Agora é só aguardar a entrega, de 2 a 5 dias corridos.', fimMsg: 'Pedido entregue. Obrigado pela confiança!' },
+    correios: { nome: 'Correios', prazo: 'postagem em 2 a 3 dias úteis após o término da produção. O prazo de chegada é dos Correios: você recebe o código de rastreio.', final: 'Postado', prontoMsg: 'Seu pedido está pronto! A postagem nos Correios acontece em 2 a 3 dias úteis.', fimMsg: 'Pedido postado nos Correios. Acompanhe pelo código de rastreio que enviamos.' },
+    retirada: { nome: 'Retirada no local', prazo: 'avisamos aqui quando estiver pronto para retirar.', final: 'Retirado', prontoMsg: 'Seu pedido está pronto para retirada!', fimMsg: 'Pedido retirado. Obrigado pela confiança!' }
+  };
+  const nomeEtapa = (etapa, envio) => etapa === 'entregue' ? (ENVIO[envio] || ENVIO.entrega).final : etapa === 'pronto' && envio === 'retirada' ? 'Pronto para retirada' : NOME_ETAPA[etapa] || etapa;
 
   // WhatsApp: números brasileiros sem o 55 ganham o código do país.
   function linkWhats(numero, texto) {
     let n = String(numero || '').replace(/\D/g, '');
     if (n.length === 10 || n.length === 11) n = '55' + n;
     return `https://wa.me/${n}?text=${encodeURIComponent(texto)}`;
-  }
-
-  // Ritmo de produção: peças prontas por hora desde o início do pedido.
-  function ritmo(p, agora) {
-    if (!p.feitos || p.feitos >= p.quantidade) return null;
-    const horas = (agora - data(p.inicio).getTime()) / 3600000;
-    if (horas < 1) return null; // pouco tempo de produção ainda: estimativa não seria confiável
-    const porHora = p.feitos / horas;
-    if (!(porHora > 0) || !Number.isFinite(porHora)) return null;
-    return { porHora, faltamMs: (p.quantidade - p.feitos) / porHora * 3600000 };
   }
 
   const el = (tag, props = {}, ...filhos) => {
@@ -148,6 +140,6 @@
   window.CT = {
     configurado: Boolean(URL_BASE && CHAVE), URL_BASE, pedir, entrar, sair, guardarSessao, garantirToken,
     get sessao() { return sessao; }, ErroServidor, nf, moeda, data, duracao, prazoTexto, quando, diaHora, relativo,
-    ETAPAS, NOME_ETAPA, linkWhats, ritmo, el, aplicarCor
+    ETAPAS, NOME_ETAPA, NOME_ESTUDIO, ENVIO, nomeEtapa, linkWhats, el, aplicarCor
   };
 })();

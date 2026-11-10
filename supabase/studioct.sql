@@ -54,6 +54,41 @@ create table if not exists public.ct_pedidos (
 );
 create index if not exists ct_pedidos_atualizado on public.ct_pedidos (atualizado_em desc);
 
+-- Versão 2: tipo de envio, WhatsApp de atendimento por pedido e chapas de impressão.
+alter table public.ct_pedidos add column if not exists envio text not null default 'entrega';
+alter table public.ct_pedidos add column if not exists whatsapp_atendimento text not null default '';
+alter table public.ct_pedidos add column if not exists chapas integer;
+alter table public.ct_pedidos add column if not exists por_chapa integer;
+alter table public.ct_pedidos add column if not exists horas_chapa numeric;
+alter table public.ct_pedidos drop constraint if exists ct_envio_valido;
+alter table public.ct_pedidos add constraint ct_envio_valido check (envio in ('entrega','correios','retirada'));
+alter table public.ct_pedidos drop constraint if exists ct_whats_atendimento;
+alter table public.ct_pedidos add constraint ct_whats_atendimento check (whatsapp_atendimento ~ '^[0-9]{0,15}$');
+alter table public.ct_pedidos drop constraint if exists ct_chapas_validas;
+alter table public.ct_pedidos add constraint ct_chapas_validas check (
+  (chapas is null or chapas between 1 and 10000) and (por_chapa is null or por_chapa between 1 and 1000000)
+  and (horas_chapa is null or (horas_chapa > 0 and horas_chapa <= 24 * 60)));
+
+-- Link curto: nome do cliente (ou do pedido) + parte aleatória que ninguém consegue adivinhar.
+create or replace function public.ct_slug(t text) returns text language sql immutable as $$
+  select left(btrim(regexp_replace(translate(lower(coalesce(t, '')),
+    'áàãâäéèêëíìîïóòõôöúùûüçñ', 'aaaaaeeeeiiiiooooouuuucn'), '[^a-z0-9]+', '-', 'g'), '-'), 24);
+$$;
+create or replace function public.ct_novo_codigo()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare base text;
+begin
+  base := ct_slug(nullif(split_part(btrim(new.cliente), ' ', 1), ''));
+  if base = '' then base := ct_slug(new.titulo); end if;
+  if base = '' then base := 'pedido'; end if;
+  new.codigo := base || '-' || encode(gen_random_bytes(6), 'hex');
+  if new.feitos >= new.quantidade and new.etapa in ('fila', 'producao') then new.etapa := 'pronto'; end if;
+  return new;
+end;
+$$;
+drop trigger if exists ct_novo_codigo on public.ct_pedidos;
+create trigger ct_novo_codigo before insert on public.ct_pedidos for each row execute function public.ct_novo_codigo();
+
 -- Histórico que o cliente vê (gerado automaticamente a cada atualização).
 create table if not exists public.ct_eventos (
   id bigint generated always as identity primary key,
@@ -81,6 +116,8 @@ begin
   new.atualizado_em := now();
   new.criado_em := old.criado_em;
   new.codigo := old.codigo;
+  -- Todas as peças prontas: o pedido passa sozinho para "Pronto".
+  if new.feitos >= new.quantidade and new.etapa in ('fila', 'producao') then new.etapa := 'pronto'; end if;
   if new.feitos is distinct from old.feitos then
     insert into ct_eventos (pedido_id, tipo, texto, feitos) values (new.id, 'progresso',
       case when new.feitos > old.feitos then '+' || (new.feitos - old.feitos) || ' pronto(s)' else 'Contagem ajustada' end, new.feitos);
@@ -124,15 +161,15 @@ create or replace function public.ct_pedido_publico(p_codigo text)
 returns json language sql stable security definer set search_path = public as $$
   select case when p.id is null then null else json_build_object(
     'titulo', p.titulo, 'tipo', p.tipo, 'cliente', split_part(btrim(p.cliente), ' ', 1),
-    'quantidade', p.quantidade, 'feitos', p.feitos, 'etapa', p.etapa,
-    'inicio', p.inicio, 'previsao', p.inicio + make_interval(secs => p.prazo_horas * 3600),
-    'prazo_horas', p.prazo_horas, 'mensagem', p.mensagem,
-    'criado_em', p.criado_em, 'atualizado_em', p.atualizado_em, 'agora', now(),
-    'estudio', (select json_build_object('nome', c.nome_estudio, 'whatsapp', c.whatsapp, 'cor', c.cor) from ct_config c where c.id = 1),
-    'eventos', coalesce((select json_agg(json_build_object('em', e.criado_em, 'tipo', e.tipo, 'texto', e.texto, 'feitos', e.feitos) order by e.criado_em desc)
-                         from (select * from ct_eventos where pedido_id = p.id order by criado_em desc limit 30) e), '[]'::json)
+    'quantidade', p.quantidade, 'feitos', p.feitos, 'etapa', p.etapa, 'envio', p.envio,
+    'termino', p.inicio + make_interval(secs => p.prazo_horas * 3600),
+    'mensagem', p.mensagem, 'atualizado_em', p.atualizado_em, 'agora', now(),
+    'whatsapp', coalesce(nullif(p.whatsapp_atendimento, ''), (select c.whatsapp from ct_config c where c.id = 1), ''),
+    -- No ritmo atual (só depois de 1 h de produção): horas para terminar o que falta.
+    'ritmo_horas', case when p.etapa = 'producao' and p.feitos > 0 and p.feitos < p.quantidade and now() - p.inicio > interval '1 hour'
+      then round(((p.quantidade - p.feitos) / (p.feitos / (extract(epoch from now() - p.inicio) / 3600)))::numeric, 2) end
   ) end
-  from (select 1) x left join ct_pedidos p on p.codigo = p_codigo and char_length(p_codigo) >= 20;
+  from (select 1) x left join ct_pedidos p on p.codigo = p_codigo and char_length(p_codigo) >= 12;
 $$;
 revoke all on function public.ct_pedido_publico(text) from public;
 grant execute on function public.ct_pedido_publico(text) to anon, authenticated;

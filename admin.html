@@ -3,76 +3,77 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Painel de pedidos</title>
+<title>Painel de pedidos | StudioCT 3D</title>
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#F4F2FB">
-<link rel="stylesheet" href="assets/estilo.css?v=1">
+<meta name="theme-color" content="#F6ECDC">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/estilo.css?v=2">
 <style>
-  .pagina { max-width: 980px; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom)); }
+  .pagina { max-width: 980px; margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom)); }
   .topo { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-  .logo { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: var(--cor); color: #fff; font-weight: 800; font-size: 18px; flex: none; }
+  .topo img { width: 52px; height: auto; filter: drop-shadow(0 4px 8px rgb(120 80 20 / .25)); }
   .topo .nome { flex: 1; min-width: 0; }
-  .topo b { display: block; font-size: 18px; }
+  .topo b { display: block; font: 700 20px var(--serifa); }
   .topo small { color: var(--suave); }
   .resumo { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
-  .resumo button { display: grid; justify-items: start; padding: 12px 14px; border: 2px solid transparent; border-radius: 14px; background: #fff; box-shadow: var(--sombra); text-align: left; }
-  .resumo button b { font-size: 24px; line-height: 1.1; }
+  .resumo button { display: grid; justify-items: start; padding: 12px 14px; border: 2px solid transparent; border-radius: 16px; background: var(--cartao); box-shadow: var(--sombra); text-align: left; }
+  .resumo button b { font: 700 26px/1.1 var(--serifa); }
   .resumo button span { color: var(--suave); font-size: 12.5px; font-weight: 650; }
   .resumo button.on { border-color: var(--cor); }
   .resumo button.atraso b { color: var(--alerta); }
   .busca { position: relative; display: block; margin-bottom: 14px; }
-  .busca input { width: 100%; min-height: 46px; padding: 0 14px 0 40px; border: 1px solid var(--linha); border-radius: 12px; background: #fff; font-size: 16px; }
+  .busca input { width: 100%; min-height: 46px; padding: 0 14px 0 40px; border: 1px solid var(--linha); border-radius: 12px; background: var(--cartao); font-size: 16px; }
   .busca svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--suave); }
   .lista { display: grid; gap: 12px; }
   .pedido { display: grid; gap: 10px; }
   .pedido-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-  .pedido h3 { margin: 0; font-size: 17px; line-height: 1.25; }
+  .pedido h3 { margin: 0; font: 700 18px/1.25 var(--serifa); }
   .pedido .sub { color: var(--suave); font-size: 13.5px; }
   .pedido .meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; font-size: 14px; }
   .pedido .meta b { font-size: 15px; }
-  .pedido .meta .atraso { color: var(--alerta); font-weight: 700; }
+  .pedido .atraso { color: var(--alerta); font-weight: 700; }
+  .pedido .chapa { font-size: 13.5px; color: var(--suave); }
+  .pedido .chapa b { color: var(--texto); }
   .acoes { display: flex; flex-wrap: wrap; gap: 8px; }
-  .acoes .btn { min-height: 40px; padding: 0 12px; font-size: 14px; }
-  .acoes .mais { margin-left: auto; }
+  .acoes .btn { min-height: 42px; padding: 0 12px; font-size: 14px; }
+  .acoes .grande { flex: 1 1 160px; min-height: 46px; font-size: 15px; }
   .vazio { text-align: center; padding: 40px 16px; color: var(--suave); }
-  .vazio b { display: block; color: var(--texto); font-size: 17px; margin-bottom: 4px; }
+  .vazio b { display: block; color: var(--texto); font: 700 18px var(--serifa); margin-bottom: 4px; }
   .fab { position: fixed; z-index: 30; right: max(20px, env(safe-area-inset-right)); bottom: calc(20px + env(safe-area-inset-bottom));
-    display: inline-flex; align-items: center; gap: 8px; min-height: 54px; padding: 0 22px; border: 0; border-radius: 999px;
-    background: var(--cor); color: #fff; font-size: 16px; font-weight: 750; box-shadow: 0 12px 30px -10px color-mix(in srgb, var(--cor) 80%, transparent); }
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 54px; padding: 0 22px; border-radius: 999px; font-size: 16px; }
   .grade { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .grade .inteiro { grid-column: 1 / -1; }
   .prazo-linha { display: grid; grid-template-columns: 1fr 120px; gap: 8px; }
-  .previsao-viva { padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--cor) 8%, #fff); font-size: 14px; }
-  .etapa-opcoes { display: flex; flex-wrap: wrap; gap: 8px; }
-  .etapa-opcoes label { position: relative; }
-  .etapa-opcoes input { position: absolute; opacity: 0; pointer-events: none; }
-  .etapa-opcoes span { display: inline-flex; min-height: 38px; align-items: center; padding: 0 12px; border: 1px solid var(--linha); border-radius: 999px; font-size: 14px; font-weight: 650; cursor: pointer; }
-  .etapa-opcoes input:checked + span { background: var(--cor); border-color: var(--cor); color: #fff; }
-  .etapa-opcoes input:focus-visible + span { outline: 2px solid var(--cor); outline-offset: 2px; }
+  .previsao-viva { padding: 10px 12px; border-radius: 12px; background: #FBEBC4; color: #6B4A0E; font-size: 14px; }
+  .chapas { border: 1px dashed var(--linha); border-radius: 14px; padding: 4px 12px; }
+  .chapas summary { padding: 8px 0; font-weight: 700; color: var(--cor); cursor: pointer; }
+  .chapas .grade3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding-bottom: 12px; }
+  .chapas .conta { padding-bottom: 12px; font-size: 14px; color: var(--suave); }
+  .chapas .conta b { color: var(--texto); }
   .contador { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
-  .contador input { text-align: center; font-size: 28px !important; font-weight: 800; min-height: 60px !important; }
+  .contador input { text-align: center; font: 700 28px var(--serifa) !important; min-height: 60px !important; }
   .contador .icone-btn { width: 56px; height: 56px; font-size: 22px; font-weight: 800; }
   .atalhos { display: flex; flex-wrap: wrap; gap: 8px; }
-  .atalhos .btn { flex: 1 1 70px; min-height: 42px; }
+  .atalhos .btn { flex: 1 1 80px; min-height: 42px; }
   .link-box { display: grid; gap: 10px; }
   .link-box input { font-size: 14px; }
-  .login { max-width: 420px; margin: 8vh auto 0; }
-  .login h1 { margin: 0 0 4px; font-size: 22px; }
+  .login { max-width: 420px; margin: 4vh auto 0; text-align: center; }
+  .login img { width: 130px; height: auto; margin: 0 auto 6px; display: block; }
+  .login h1 { margin: 0 0 4px; font: 700 24px var(--serifa); }
   .login p { margin: 0 0 16px; color: var(--suave); }
-  .login form { display: grid; gap: 12px; }
+  .login form { display: grid; gap: 12px; text-align: left; }
   .link-txt { border: 0; background: none; padding: 4px 0; color: var(--cor); font-weight: 700; text-decoration: underline; }
   .linha-links { display: flex; flex-wrap: wrap; gap: 4px 16px; }
   .msg { font-size: 14px; font-weight: 600; }
   .msg.ok { color: var(--ok); }
   .msg.ruim { color: var(--perigo); }
-  .cor-linha { display: flex; gap: 10px; align-items: center; }
-  .cor-linha input[type=color] { width: 56px; height: 44px; padding: 2px; border-radius: 10px; border: 1px solid var(--linha); background: #fff; }
   .aviso button { margin-left: 10px; border: 0; border-radius: 8px; padding: 5px 10px; background: rgb(255 255 255 / .2); color: #fff; font-weight: 700; }
   @media (max-width: 720px) {
     .resumo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .grade { grid-template-columns: 1fr; }
-    .fab { left: 16px; right: 16px; justify-content: center; }
-    .acoes .mais { margin-left: 0; }
+    .chapas .grade3 { grid-template-columns: 1fr 1fr; }
+    .fab { left: 16px; right: 16px; }
   }
 </style>
 </head>
@@ -81,39 +82,56 @@
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-busca" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-mais" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
-  <symbol id="i-engr" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-conta" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
 </svg>
 
 <main class="pagina" id="app">
   <p style="text-align:center;padding:60px 0;color:var(--suave)">Carregando…</p>
 </main>
-<button class="fab" type="button" id="btnNovo" hidden><svg class="ic"><use href="#i-mais"/></svg>Novo pedido</button>
+<button class="btn btn-cor fab" type="button" id="btnNovo" hidden><svg class="ic"><use href="#i-mais"/></svg>Novo pedido</button>
 
 <!-- Pedido: criar e editar -->
 <dialog id="dlgPedido" aria-labelledby="tPedido">
   <div class="dlg-topo"><h2 id="tPedido">Novo pedido</h2><button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
   <div class="dlg-corpo">
     <div class="grade">
-      <div class="campo inteiro"><label for="pTitulo">Título do pedido *</label><input id="pTitulo" maxlength="120" placeholder="Ex.: Chaveiros formatura 3º B"></div>
-      <div class="campo"><label for="pTipo">Tipo do pedido</label><input id="pTipo" list="tipos" maxlength="60" placeholder="Ex.: Chaveiro"></div>
-      <div class="campo"><label for="pQtd">Quantidade *</label><input id="pQtd" type="number" inputmode="numeric" min="1" step="1" placeholder="Ex.: 100"></div>
+      <div class="campo inteiro"><label for="pTitulo">Título do pedido *</label><input id="pTitulo" maxlength="120" placeholder="Ex.: Decorações de Natal"></div>
+      <div class="campo"><label for="pTipo">Tipo do pedido</label><input id="pTipo" list="tipos" maxlength="60" placeholder="Ex.: Decoração"></div>
+      <div class="campo"><label for="pQtd">Quantidade total *</label><input id="pQtd" type="number" inputmode="numeric" min="1" step="1" placeholder="Ex.: 30"></div>
       <div class="campo"><label for="pCliente">Nome do cliente</label><input id="pCliente" maxlength="120" autocomplete="off"></div>
-      <div class="campo"><label for="pTel">WhatsApp do cliente</label><input id="pTel" type="tel" inputmode="tel" placeholder="(11) 99999-0000"><small>Para mandar o link direto para ele.</small></div>
+      <div class="campo"><label for="pTel">WhatsApp do cliente</label><input id="pTel" type="tel" inputmode="tel" placeholder="(11) 99999-0000"><small>Para mandar o link para ele.</small></div>
+      <div class="campo"><label for="pAtend">Seu WhatsApp (atendimento)</label><input id="pAtend" type="tel" inputmode="tel" placeholder="(11) 98888-7777"><small>O cliente fala com este número pelo botão da página.</small></div>
+      <div class="campo"><label for="pEnvio">Envio *</label>
+        <select id="pEnvio">
+          <option value="entrega">Entrega feita por mim (2 a 5 dias corridos)</option>
+          <option value="correios">Correios (postagem em 2 a 3 dias úteis)</option>
+          <option value="retirada">Retirada no local</option>
+        </select>
+      </div>
       <div class="campo inteiro">
         <span class="rotulo">Tempo para ficar pronto *</span>
         <div class="prazo-linha">
-          <input id="pPrazo" type="number" inputmode="decimal" min="0.5" step="0.5" aria-label="Tempo para ficar pronto" placeholder="Ex.: 5">
-          <select id="pUnidade" aria-label="Unidade do tempo"><option value="dias">dias</option><option value="horas">horas</option></select>
+          <input id="pPrazo" type="number" inputmode="decimal" min="0.5" step="0.5" aria-label="Tempo para ficar pronto" placeholder="Ex.: 10">
+          <select id="pUnidade" aria-label="Unidade do tempo"><option value="horas">horas</option><option value="dias">dias</option></select>
         </div>
       </div>
-      <div class="campo"><label for="pInicio">Início da produção</label><input id="pInicio" type="datetime-local"></div>
+      <details class="chapas inteiro" id="pChapas">
+        <summary>+ Calcular pelas chapas de impressão</summary>
+        <div class="grade3">
+          <div class="campo"><label for="pPorChapa">Objetos por chapa</label><input id="pPorChapa" type="number" inputmode="numeric" min="1" step="1" placeholder="Ex.: 15"></div>
+          <div class="campo"><label for="pNChapas">Quantas chapas</label><input id="pNChapas" type="number" inputmode="numeric" min="1" step="1" placeholder="Ex.: 2"></div>
+          <div class="campo"><label for="pHChapa">Horas por chapa</label><input id="pHChapa" type="number" inputmode="decimal" min="0.25" step="0.25" placeholder="Ex.: 5"></div>
+        </div>
+        <div class="conta" id="pConta">Preencha para calcular o tempo total.</div>
+      </details>
+      <div class="campo"><label for="pInicio">Início da produção</label><input id="pInicio" type="datetime-local"><small>Só você vê.</small></div>
       <div class="campo"><label for="pFeitos">Já prontos</label><input id="pFeitos" type="number" inputmode="numeric" min="0" step="1" value="0"></div>
       <div class="previsao-viva inteiro" id="pPrevisao"></div>
-      <div class="campo inteiro"><span class="rotulo">Etapa</span><div class="etapa-opcoes" id="pEtapas"></div></div>
-      <div class="campo inteiro"><label for="pMsg">Recado para o cliente</label><textarea id="pMsg" maxlength="600" placeholder="Aparece na página do cliente. Ex.: Começamos a impressão hoje!"></textarea></div>
-      <div class="campo"><label for="pValor">Valor do pedido (R$)</label><input id="pValor" inputmode="decimal" placeholder="Ex.: 450,00"><small>Só você vê.</small></div>
-      <div class="campo"><label for="pPago">Já recebido (R$)</label><input id="pPago" inputmode="decimal" placeholder="Ex.: 225,00"><small>Só você vê.</small></div>
-      <div class="campo inteiro"><label for="pNotas">Notas internas</label><textarea id="pNotas" maxlength="2000" placeholder="Cor, material, detalhes combinados… Só você vê."></textarea></div>
+      <div class="campo inteiro" id="pSituacaoBox" hidden><label for="pSituacao">Situação</label>
+        <select id="pSituacao"><option value="fila">Na fila</option><option value="producao">Em produção</option><option value="pronto">Pronto</option><option value="entregue">Entregue / postado / retirado</option><option value="cancelado">Cancelado</option></select>
+        <small>Normalmente não precisa mexer: o pedido entra em produção e vira "Pronto" sozinho quando todas as peças ficam prontas.</small>
+      </div>
+      <div class="campo inteiro"><label for="pMsg">Recado para o cliente (opcional)</label><textarea id="pMsg" maxlength="600" placeholder="Ex.: Tivemos uma queda de luz, vai atrasar um pouco."></textarea><small>Só aparece para o cliente se você escrever algo.</small></div>
     </div>
     <p class="erro" id="pErro"></p>
   </div>
@@ -123,7 +141,7 @@
     <button class="btn btn-cor" type="button" id="btnSalvarPedido">Salvar pedido</button>
   </div>
 </dialog>
-<datalist id="tipos"><option value="Chaveiro"><option value="Miniatura"><option value="Brinde"><option value="Peça técnica"><option value="Protótipo"><option value="Decoração"><option value="Suporte"></datalist>
+<datalist id="tipos"><option value="Chaveiro"><option value="Decoração"><option value="Miniatura"><option value="Brinde"><option value="Peça técnica"><option value="Protótipo"><option value="Suporte"></datalist>
 
 <!-- Atualizar progresso -->
 <dialog id="dlgProgresso" aria-labelledby="tProg">
@@ -139,8 +157,7 @@
       <small id="gInfo"></small>
     </div>
     <div class="atalhos" id="gAtalhos"></div>
-    <div class="campo"><span class="rotulo">Etapa</span><div class="etapa-opcoes" id="gEtapas"></div></div>
-    <div class="campo"><label for="gMsg">Recado para o cliente (opcional)</label><textarea id="gMsg" maxlength="600"></textarea></div>
+    <div class="campo"><label for="gMsg">Recado para o cliente (opcional)</label><textarea id="gMsg" maxlength="600"></textarea><small>Deixe em branco para não mostrar recado.</small></div>
     <p class="erro" id="gErro"></p>
   </div>
   <div class="dlg-pe"><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-cor" type="button" id="btnSalvarProg">Salvar</button></div>
@@ -150,7 +167,7 @@
 <dialog id="dlgLink" aria-labelledby="tLink">
   <div class="dlg-topo"><h2 id="tLink">Link do cliente</h2><button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
   <div class="dlg-corpo link-box">
-    <p style="margin:0" id="lTexto">Mande este link para o cliente acompanhar o pedido. Só quem tem o link consegue ver.</p>
+    <p style="margin:0" id="lTexto"></p>
     <div class="campo"><label for="lUrl">Link</label><input id="lUrl" readonly></div>
     <button class="btn" type="button" id="btnCopiar">Copiar link</button>
     <a class="btn btn-cor" id="btnWhats" target="_blank" rel="noopener noreferrer">Enviar pelo WhatsApp</a>
@@ -158,18 +175,14 @@
   </div>
 </dialog>
 
-<!-- Configurações -->
-<dialog id="dlgConfig" aria-labelledby="tCfg">
-  <div class="dlg-topo"><h2 id="tCfg">Configurações</h2><button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
+<!-- Conta -->
+<dialog id="dlgConta" aria-labelledby="tConta">
+  <div class="dlg-topo"><h2 id="tConta">Conta</h2><button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
   <div class="dlg-corpo">
-    <div class="campo"><label for="cNome">Nome do estúdio</label><input id="cNome" maxlength="80"><small>Aparece no topo da página do cliente.</small></div>
-    <div class="campo"><label for="cWhats">Seu WhatsApp</label><input id="cWhats" type="tel" inputmode="tel" placeholder="(11) 99999-0000"><small>O cliente usa para falar com você pelo botão da página.</small></div>
-    <div class="campo"><label for="cCor">Cor da marca</label><div class="cor-linha"><input id="cCor" type="color"><span id="cCorTxt"></span></div></div>
-    <p class="erro" id="cErro"></p>
-    <hr style="border:0;border-top:1px solid var(--linha);width:100%">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span id="cConta" style="color:var(--suave);font-size:14px"></span><button class="btn" type="button" id="btnSair">Sair</button></div>
+    <p style="margin:0" id="cConta"></p>
+    <p style="margin:0;color:var(--suave);font-size:14px">Todos que entram com esta conta veem e atualizam os mesmos pedidos.</p>
   </div>
-  <div class="dlg-pe"><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-cor" type="button" id="btnSalvarCfg">Salvar</button></div>
+  <div class="dlg-pe"><button class="btn" type="button" data-fechar>Fechar</button><button class="btn btn-perigo" type="button" id="btnSair">Sair desta conta</button></div>
 </dialog>
 
 <!-- Confirmação -->
@@ -181,15 +194,16 @@
 
 <div class="aviso" id="aviso" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=1"></script>
-<script src="assets/comum.js?v=1"></script>
+<script src="config.js?v=2"></script>
+<script src="assets/comum.js?v=2"></script>
 <script>
 (() => {
   'use strict';
   const { el, nf } = CT;
   const $ = s => document.querySelector(s);
   const app = $('#app');
-  let pedidos = [], config = { nome_estudio: 'Studio CT', whatsapp: '', cor: '#6C5CE7' };
+  const ATEND_KEY = 'studioct.whatsapp.atendimento';
+  let pedidos = [];
   const vista = { filtro: 'andamento', busca: '' };
   let editando = null, progAlvo = null, modoLogin = 'entrar', tokenRecuperacao = '';
 
@@ -200,7 +214,7 @@
   let avisoT;
   function aviso(msg, ruim = false, acao) {
     const a = $('#aviso');
-    a.replaceChildren(el('span', { text: msg }), acao ? el('button', { type: 'button', text: acao.rotulo, onclick: () => { a.classList.remove('on'); acao.fn(); } }) : null);
+    a.replaceChildren(...[el('span', { text: msg }), acao ? el('button', { type: 'button', text: acao.rotulo, onclick: () => { a.classList.remove('on'); acao.fn(); } }) : null].filter(Boolean));
     a.classList.toggle('ruim', ruim); a.classList.add('on');
     clearTimeout(avisoT); avisoT = setTimeout(() => a.classList.remove('on'), acao ? 7000 : 3200);
   }
@@ -214,19 +228,27 @@
       abrir(d);
     });
   }
-  const numero = v => { const s = String(v || '').trim().replace(/\s|R\$/g, ''); if (!s) return null; const n = Number(s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s); return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : NaN; };
+  const numero = v => { const s = String(v || '').trim().replace(/\s/g, ''); if (!s) return null; const n = Number(s.replace(',', '.')); return Number.isFinite(n) && n >= 0 ? n : NaN; };
+  const inteiro = v => { const n = numero(v); return n == null ? null : Number.isInteger(n) ? n : NaN; };
   const digitos = v => String(v || '').replace(/\D/g, '');
-  const previsaoDe = p => new Date(CT.data(p.inicio).getTime() + Number(p.prazo_horas) * 3600000);
-  const linkCliente = p => new URL('./?p=' + p.codigo, location.href).href;
+  const ls = { get: k => { try { return localStorage.getItem(k) || ''; } catch (_) { return ''; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (_) {} } };
+  const terminoDe = p => new Date(CT.data(p.inicio).getTime() + Number(p.prazo_horas) * 3600000);
+  const linkCliente = p => new URL('./p/' + encodeURIComponent(p.codigo), location.href).href;
   const fimEtapa = e => ['pronto', 'entregue', 'cancelado'].includes(e);
-  const atrasado = p => !fimEtapa(p.etapa) && previsaoDe(p).getTime() < Date.now();
+  const atrasado = p => !fimEtapa(p.etapa) && terminoDe(p).getTime() < Date.now();
   const paraLocal = d => { const x = new Date(d.getTime() - d.getTimezoneOffset() * 60000); return x.toISOString().slice(0, 16); };
+  const envioDe = p => CT.ENVIO[p.envio] || CT.ENVIO.entrega;
+  const porChapa = p => p.por_chapa || (p.chapas ? Math.ceil(p.quantidade / p.chapas) : null);
   function erroAmigavel(e) {
     if (e.status === 0) return 'Sem conexão com o servidor. Verifique a internet.';
     if (e.status === 401) return 'Sua sessão venceu. Entre de novo.';
     if (/row-level security|permission/i.test(e.message)) return 'Esta conta não tem permissão de administrador.';
     if (/ct_feitos_validos/.test(e.message)) return 'A quantidade pronta não pode passar do total do pedido.';
     return e.message || 'Algo deu errado. Tente de novo.';
+  }
+  function svg(id) {
+    const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('class', 'ic');
+    const u = document.createElementNS('http://www.w3.org/2000/svg', 'use'); u.setAttribute('href', '#' + id); s.append(u); return s;
   }
 
   /* ---------- login ---------- */
@@ -287,12 +309,11 @@
       } catch (err) { m.textContent = erroAmigavel(err); m.className = 'msg ruim'; }
     }
     app.replaceChildren(el('section', { class: 'cartao login' },
+      el('img', { src: 'assets/logo.webp', alt: CT.NOME_ESTUDIO, width: '130', height: '153' }),
       el('h1', { text: nova ? 'Nova senha' : 'Painel de pedidos' }),
-      el('p', { text: nova ? 'Crie uma senha nova para sua conta.' : 'Entre com a conta de administrador do estúdio.' }), form));
+      el('p', { text: nova ? 'Crie uma senha nova para a conta.' : 'Entre com a conta do estúdio.' }), form));
     (nova ? senha : email).focus();
   }
-
-  // Volta dos links do e-mail (confirmação ou senha esquecida).
   function retornoEmail() {
     if (!location.hash || location.hash.length < 5) return false;
     const h = new URLSearchParams(location.hash.slice(1));
@@ -306,13 +327,8 @@
 
   /* ---------- dados ---------- */
   async function carregar() {
-    const [lista, cfg] = await Promise.all([
-      CT.pedir('/rest/v1/ct_pedidos?select=*&order=criado_em.desc', { comLogin: true }),
-      CT.pedir('/rest/v1/ct_config?select=*&id=eq.1', { comLogin: true })
-    ]);
+    const lista = await CT.pedir('/rest/v1/ct_pedidos?select=*&order=criado_em.desc', { comLogin: true });
     pedidos = Array.isArray(lista) ? lista : [];
-    if (Array.isArray(cfg) && cfg[0]) config = cfg[0];
-    CT.aplicarCor(config.cor);
   }
   async function salvarPedido(id, campos) {
     const r = await CT.pedir(id ? `/rest/v1/ct_pedidos?id=eq.${id}` : '/rest/v1/ct_pedidos', { metodo: id ? 'PATCH' : 'POST', corpo: campos, cabecalhos: { prefer: 'return=representation' }, comLogin: true });
@@ -332,9 +348,6 @@
   ];
   function desenhar() {
     $('#btnNovo').hidden = false;
-    const f = FILTROS.find(x => x.id === vista.filtro) || FILTROS[0];
-    const q = vista.busca.trim().toLowerCase();
-    const visiveis = pedidos.filter(f.teste).filter(p => !q || [p.titulo, p.cliente, p.tipo].join(' ').toLowerCase().includes(q));
     const resumo = el('div', { class: 'resumo', role: 'group', 'aria-label': 'Filtrar pedidos' },
       FILTROS.map(x => el('button', { type: 'button', class: (x.id === vista.filtro ? 'on ' : '') + (x.id === 'atrasados' && pedidos.some(atrasado) ? 'atraso' : ''), 'aria-pressed': String(x.id === vista.filtro), onclick: () => { vista.filtro = x.id; desenhar(); } },
         el('b', { text: String(pedidos.filter(x.teste).length) }), el('span', { text: x.nome }))));
@@ -342,16 +355,16 @@
       el('input', { type: 'search', placeholder: 'Buscar por título, cliente ou tipo', value: vista.busca, oninput: e => { vista.busca = e.target.value; desenharLista(); } }));
     app.replaceChildren(
       el('header', { class: 'topo' },
-        el('div', { class: 'logo', 'aria-hidden': 'true', text: (config.nome_estudio || 'S').trim().charAt(0).toUpperCase() }),
-        el('div', { class: 'nome' }, el('b', { text: config.nome_estudio }), el('small', { text: 'Painel de pedidos' })),
-        el('button', { class: 'icone-btn', type: 'button', 'aria-label': 'Configurações', title: 'Configurações', onclick: abrirConfig }, svg('i-engr'))),
+        el('img', { src: 'assets/logo.webp', alt: '', width: '52', height: '61' }),
+        el('div', { class: 'nome' }, el('b', { text: CT.NOME_ESTUDIO }), el('small', { text: 'Painel de pedidos' })),
+        el('button', { class: 'icone-btn', type: 'button', 'aria-label': 'Conta', title: 'Conta', onclick: abrirConta }, svg('i-conta'))),
       resumo, busca, el('div', { class: 'lista', id: 'lista' }));
-    desenharLista(visiveis);
+    desenharLista();
   }
-  function desenharLista(pre) {
+  function desenharLista() {
     const f = FILTROS.find(x => x.id === vista.filtro) || FILTROS[0];
     const q = vista.busca.trim().toLowerCase();
-    const visiveis = pre || pedidos.filter(f.teste).filter(p => !q || [p.titulo, p.cliente, p.tipo].join(' ').toLowerCase().includes(q));
+    const visiveis = pedidos.filter(f.teste).filter(p => !q || [p.titulo, p.cliente, p.tipo].join(' ').toLowerCase().includes(q));
     const lista = $('#lista');
     if (!lista) return;
     if (!visiveis.length) {
@@ -362,58 +375,90 @@
     }
     lista.replaceChildren(...visiveis.map(cartao));
   }
-  function svg(id) {
-    const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('class', 'ic');
-    const u = document.createElementNS('http://www.w3.org/2000/svg', 'use'); u.setAttribute('href', '#' + id); s.append(u); return s;
+  function linhaChapa(p) {
+    const pc = porChapa(p);
+    if (!p.chapas || !pc || !p.horas_chapa || fimEtapa(p.etapa)) return null;
+    const atual = Math.min(p.chapas, Math.floor(p.feitos / pc) + 1);
+    const fim = new Date(CT.data(p.inicio).getTime() + atual * Number(p.horas_chapa) * 3600000);
+    return el('div', { class: 'chapa' }, el('b', { text: `Chapa ${atual} de ${p.chapas}` }), ` · ${pc} por chapa · esta chapa termina por volta de ${CT.diaHora(fim)}`);
   }
   function cartao(p) {
     const pct = Math.floor(p.feitos / p.quantidade * 100);
-    const prev = previsaoDe(p), resta = prev.getTime() - Date.now();
+    const term = terminoDe(p), resta = term.getTime() - Date.now();
     const atraso = atrasado(p);
+    const envio = envioDe(p);
+    const pc = porChapa(p);
+    const emAndamento = !fimEtapa(p.etapa);
     return el('article', { class: 'cartao pedido', 'data-id': p.id },
       el('div', { class: 'pedido-topo' },
-        el('div', {}, el('h3', { text: p.titulo }), el('div', { class: 'sub', text: [p.cliente, p.tipo].filter(Boolean).join(' · ') || 'Sem cliente' })),
-        el('span', { class: 'selo selo-' + p.etapa }, el('i'), CT.NOME_ETAPA[p.etapa])),
+        el('div', {}, el('h3', { text: p.titulo }), el('div', { class: 'sub', text: [p.cliente, p.tipo, envio.nome].filter(Boolean).join(' · ') })),
+        el('span', { class: 'selo selo-' + p.etapa }, el('i'), CT.nomeEtapa(p.etapa, p.envio))),
       el('div', { class: 'barra', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(p.quantidade), 'aria-valuenow': String(p.feitos), 'aria-label': `${pct}% pronto` }, el('span', { style: `width:${pct}%` })),
       el('div', { class: 'meta' },
         el('span', {}, el('b', { text: `${nf.format(p.feitos)} de ${nf.format(p.quantidade)}` }), ` prontos · ${pct}%`),
-        el('span', { class: atraso ? 'atraso' : '', text: fimEtapa(p.etapa) ? `Entrega prevista: ${CT.diaHora(prev)}` : atraso ? `Atrasado ${CT.duracao(-resta)}` : `Entrega em ${CT.duracao(resta)} · ${CT.diaHora(prev)}` })),
+        emAndamento ? el('span', { class: atraso ? 'atraso' : '', text: atraso ? `Produção atrasada ${CT.duracao(-resta)}` : `Termina em ${CT.duracao(resta)} · ${CT.diaHora(term)}` }) : null),
+      linhaChapa(p),
       el('div', { class: 'acoes' },
-        fimEtapa(p.etapa) ? null : el('button', { class: 'btn', type: 'button', text: '+1', 'aria-label': 'Mais um pronto', onclick: () => somar(p, 1) }),
-        fimEtapa(p.etapa) ? null : el('button', { class: 'btn', type: 'button', text: '+10', 'aria-label': 'Mais dez prontos', onclick: () => somar(p, 10) }),
-        el('button', { class: 'btn btn-cor', type: 'button', text: 'Atualizar', onclick: () => abrirProgresso(p) }),
+        emAndamento ? el('button', { class: 'btn', type: 'button', text: '+1', 'aria-label': 'Mais um pronto', onclick: () => somar(p, 1) }) : null,
+        emAndamento ? (pc ? el('button', { class: 'btn', type: 'button', text: `+1 chapa (${pc})`, 'aria-label': `Mais uma chapa: ${pc} prontos`, onclick: () => somar(p, pc) })
+                          : el('button', { class: 'btn', type: 'button', text: '+10', 'aria-label': 'Mais dez prontos', onclick: () => somar(p, 10) })) : null,
+        emAndamento ? el('button', { class: 'btn', type: 'button', text: 'Atualizar', onclick: () => abrirProgresso(p) }) : null,
         el('button', { class: 'btn', type: 'button', text: 'Link do cliente', onclick: () => abrirLink(p) }),
-        el('button', { class: 'btn mais', type: 'button', text: 'Editar', onclick: () => abrirPedido(p) })));
+        el('button', { class: 'btn', type: 'button', text: 'Editar', onclick: () => abrirPedido(p) }),
+        emAndamento ? el('button', { class: 'btn btn-cor grande', type: 'button', text: '✓ Pronto', onclick: () => marcarPronto(p) }) : null,
+        p.etapa === 'pronto' ? el('button', { class: 'btn btn-cor grande', type: 'button', text: `✓ Marcar como ${envio.final.toLowerCase()}`, onclick: () => marcarEntregue(p) }) : null));
   }
 
   async function somar(p, n) {
     const feitos = Math.min(p.quantidade, p.feitos + n);
     if (feitos === p.feitos) return aviso('Este pedido já está com todas as peças prontas.');
-    const campos = { feitos };
-    if (p.etapa === 'fila') campos.etapa = 'producao';
     try {
-      const novo = await salvarPedido(p.id, campos);
+      const novo = await salvarPedido(p.id, p.etapa === 'fila' ? { feitos, etapa: 'producao' } : { feitos });
       desenhar();
-      if (novo.feitos === novo.quantidade && !fimEtapa(novo.etapa)) aviso('Todas as peças prontas!', false, { rotulo: 'Marcar como pronto', fn: () => salvarPedido(novo.id, { etapa: 'pronto' }).then(desenhar, e => aviso(erroAmigavel(e), true)) });
-      else aviso(`${novo.titulo}: ${nf.format(novo.feitos)} de ${nf.format(novo.quantidade)} prontos.`);
+      aviso(novo.etapa === 'pronto' ? `${novo.titulo}: tudo pronto! O cliente já vê "Pronto".` : `${novo.titulo}: ${nf.format(novo.feitos)} de ${nf.format(novo.quantidade)} prontos.`);
+    } catch (e) { aviso(erroAmigavel(e), true); }
+  }
+  async function marcarPronto(p) {
+    const antes = { feitos: p.feitos, etapa: p.etapa };
+    try {
+      await salvarPedido(p.id, { feitos: p.quantidade, etapa: 'pronto' });
+      desenhar();
+      aviso(`${p.titulo}: marcado como pronto.`, false, { rotulo: 'Desfazer', fn: () => salvarPedido(p.id, antes).then(desenhar, e => aviso(erroAmigavel(e), true)) });
+    } catch (e) { aviso(erroAmigavel(e), true); }
+  }
+  async function marcarEntregue(p) {
+    try {
+      await salvarPedido(p.id, { etapa: 'entregue' });
+      desenhar();
+      aviso(`${p.titulo}: marcado como ${envioDe(p).final.toLowerCase()}.`, false, { rotulo: 'Desfazer', fn: () => salvarPedido(p.id, { etapa: 'pronto' }).then(desenhar, e => aviso(erroAmigavel(e), true)) });
     } catch (e) { aviso(erroAmigavel(e), true); }
   }
 
-  /* ---------- etapas (rádios) ---------- */
-  function radiosEtapa(box, nome, atual) {
-    box.replaceChildren(...['fila', 'producao', 'pausado', 'acabamento', 'pronto', 'entregue', 'cancelado'].map(id =>
-      el('label', {}, el('input', { type: 'radio', name: nome, value: id, checked: id === atual }), el('span', { text: CT.NOME_ETAPA[id] }))));
-  }
-  const etapaEscolhida = nome => { const r = document.querySelector(`input[name="${nome}"]:checked`); return r ? r.value : 'fila'; };
-
   /* ---------- criar / editar ---------- */
+  function calcularChapas(origem) {
+    const qtd = inteiro($('#pQtd').value), pc = inteiro($('#pPorChapa').value), h = numero($('#pHChapa').value);
+    const nCampo = $('#pNChapas');
+    if (origem !== 'n' && qtd > 0 && pc > 0 && (!nCampo.value || nCampo.dataset.auto === '1')) { nCampo.value = Math.ceil(qtd / pc); nCampo.dataset.auto = '1'; }
+    const n = inteiro(nCampo.value);
+    const conta = $('#pConta');
+    if (n > 0 && h > 0) {
+      const total = Math.round(n * h * 100) / 100;
+      conta.replaceChildren(`${n} chapa${n > 1 ? 's' : ''} × ${nf.format(h)} h = `, el('b', { text: `${nf.format(total)} horas` }), ' (já colocado em "Tempo para ficar pronto")');
+      $('#pPrazo').value = String(total); $('#pUnidade').value = 'horas';
+      atualizarPrevisao();
+    } else conta.textContent = 'Preencha objetos por chapa, quantas chapas e horas por chapa para calcular o tempo total.';
+  }
+  $('#pPorChapa').addEventListener('input', () => calcularChapas('pc'));
+  $('#pHChapa').addEventListener('input', () => calcularChapas('h'));
+  $('#pNChapas').addEventListener('input', () => { $('#pNChapas').dataset.auto = ''; calcularChapas('n'); });
+  $('#pQtd').addEventListener('input', () => { if ($('#pPorChapa').value) calcularChapas('qtd'); });
   function atualizarPrevisao() {
     const q = numero($('#pPrazo').value), u = $('#pUnidade').value;
     const ini = $('#pInicio').value ? new Date($('#pInicio').value) : new Date();
     const box = $('#pPrevisao');
-    if (!q || !(q > 0)) { box.textContent = 'Informe o tempo para ver a previsão de entrega.'; return; }
-    const prev = new Date(ini.getTime() + q * (u === 'dias' ? 24 : 1) * 3600000);
-    box.textContent = `Previsão de entrega para o cliente: ${CT.quando(prev)}`;
+    if (!q || !(q > 0)) { box.textContent = 'Informe o tempo para ver quando a produção termina.'; return; }
+    const fim = new Date(ini.getTime() + q * (u === 'dias' ? 24 : 1) * 3600000);
+    box.textContent = `Término previsto da produção: ${CT.quando(fim)}`;
   }
   ['#pPrazo', '#pUnidade', '#pInicio'].forEach(s => $(s).addEventListener('input', atualizarPrevisao));
   function abrirPedido(p) {
@@ -424,17 +469,22 @@
     $('#pQtd').value = p ? p.quantidade : '';
     $('#pCliente').value = p ? p.cliente : '';
     $('#pTel').value = p ? p.telefone : '';
+    $('#pAtend').value = p ? (p.whatsapp_atendimento || '') : ls.get(ATEND_KEY);
+    $('#pEnvio').value = p ? (p.envio || 'entrega') : 'entrega';
     const h = p ? Number(p.prazo_horas) : 0;
-    const emDias = !p || h % 24 === 0 || h >= 48;
+    const emDias = p && h % 24 === 0 && h >= 48;
     $('#pUnidade').value = emDias ? 'dias' : 'horas';
     $('#pPrazo').value = p ? String(Math.round((emDias ? h / 24 : h) * 100) / 100) : '';
+    $('#pPorChapa').value = p && p.por_chapa ? p.por_chapa : '';
+    $('#pNChapas').value = p && p.chapas ? p.chapas : ''; $('#pNChapas').dataset.auto = '';
+    $('#pHChapa').value = p && p.horas_chapa ? String(p.horas_chapa) : '';
+    $('#pChapas').open = Boolean(p && p.chapas);
+    $('#pConta').textContent = 'Preencha objetos por chapa, quantas chapas e horas por chapa para calcular o tempo total.';
     $('#pInicio').value = paraLocal(p ? CT.data(p.inicio) : new Date());
     $('#pFeitos').value = p ? p.feitos : 0;
+    $('#pSituacaoBox').hidden = !p;
+    $('#pSituacao').value = p ? (['pausado', 'acabamento'].includes(p.etapa) ? 'producao' : p.etapa) : 'producao';
     $('#pMsg').value = p ? p.mensagem : '';
-    $('#pValor').value = p && p.valor != null ? String(p.valor).replace('.', ',') : '';
-    $('#pPago').value = p && p.pago != null ? String(p.pago).replace('.', ',') : '';
-    $('#pNotas').value = p ? p.notas : '';
-    radiosEtapa($('#pEtapas'), 'pEtapa', p ? p.etapa : 'fila');
     $('#btnExcluir').hidden = !p;
     $('#pErro').textContent = '';
     document.querySelectorAll('#dlgPedido .invalido').forEach(n => n.classList.remove('invalido'));
@@ -447,33 +497,36 @@
     const erro = (campo, t) => { $('#pErro').textContent = t; if (campo) { $(campo).classList.add('invalido'); $(campo).focus(); } };
     document.querySelectorAll('#dlgPedido .invalido').forEach(n => n.classList.remove('invalido'));
     const titulo = $('#pTitulo').value.trim();
-    const qtd = Number($('#pQtd').value), feitos = Number($('#pFeitos').value || 0);
+    const qtd = inteiro($('#pQtd').value), feitos = inteiro($('#pFeitos').value) || 0;
     const prazo = numero($('#pPrazo').value);
-    const valor = numero($('#pValor').value), pago = numero($('#pPago').value);
-    const tel = digitos($('#pTel').value);
+    const tel = digitos($('#pTel').value), atend = digitos($('#pAtend').value);
+    const pc = inteiro($('#pPorChapa').value), nch = inteiro($('#pNChapas').value), hch = numero($('#pHChapa').value);
     if (!titulo) return erro('#pTitulo', 'Dê um título ao pedido.');
-    if (!Number.isInteger(qtd) || qtd < 1) return erro('#pQtd', 'A quantidade precisa ser um número inteiro maior que zero.');
-    if (!prazo || !(prazo > 0)) return erro('#pPrazo', 'Informe quanto tempo o pedido leva para ficar pronto.');
+    if (!(qtd >= 1)) return erro('#pQtd', 'A quantidade precisa ser um número inteiro maior que zero.');
+    if (!prazo || !(prazo > 0)) return erro('#pPrazo', 'Informe quanto tempo o pedido leva para ficar pronto (ou calcule pelas chapas).');
     if (!Number.isInteger(feitos) || feitos < 0 || feitos > qtd) return erro('#pFeitos', `"Já prontos" precisa ficar entre 0 e ${qtd}.`);
-    if (Number.isNaN(valor)) return erro('#pValor', 'Valor inválido. Use, por exemplo, 450,00.');
-    if (Number.isNaN(pago)) return erro('#pPago', 'Valor recebido inválido. Use, por exemplo, 225,00.');
-    if (tel && tel.length < 10) return erro('#pTel', 'WhatsApp incompleto: coloque DDD e número.');
+    if (tel && tel.length < 10) return erro('#pTel', 'WhatsApp do cliente incompleto: coloque DDD e número.');
+    if (atend && atend.length < 10) return erro('#pAtend', 'Seu WhatsApp está incompleto: coloque DDD e número.');
+    if (Number.isNaN(pc) || Number.isNaN(nch) || Number.isNaN(hch)) return erro(null, 'Os números das chapas precisam ser válidos.');
     const horas = prazo * ($('#pUnidade').value === 'dias' ? 24 : 1);
     if (horas > 24 * 366) return erro('#pPrazo', 'O prazo máximo é de 1 ano.');
-    let etapa = etapaEscolhida('pEtapa');
-    if (etapa === 'fila' && feitos > 0) etapa = 'producao';
+    let etapa = editando ? $('#pSituacao').value : 'producao';
+    if (feitos >= qtd && ['fila', 'producao'].includes(etapa)) etapa = 'pronto';
     const campos = {
-      titulo, tipo: $('#pTipo').value.trim(), cliente: $('#pCliente').value.trim(), telefone: tel, quantidade: qtd, feitos, etapa,
+      titulo, tipo: $('#pTipo').value.trim(), cliente: $('#pCliente').value.trim(), telefone: tel, whatsapp_atendimento: atend,
+      envio: $('#pEnvio').value, quantidade: qtd, feitos, etapa,
       inicio: new Date($('#pInicio').value || Date.now()).toISOString(), prazo_horas: Math.round(horas * 100) / 100,
-      mensagem: $('#pMsg').value.trim(), notas: $('#pNotas').value.trim(), valor, pago
+      chapas: nch || null, por_chapa: pc || null, horas_chapa: hch || null,
+      mensagem: $('#pMsg').value.trim()
     };
+    if (atend) ls.set(ATEND_KEY, atend);
     const btn = $('#btnSalvarPedido'); btn.disabled = true;
     try {
       const novo = await salvarPedido(editando && editando.id, campos);
       fechar($('#dlgPedido'));
       desenhar();
-      if (!editando) { abrirLink(novo, true); }
-      else aviso('Pedido atualizado.');
+      if (!editando) abrirLink(novo, true);
+      else aviso('Pedido atualizado. O cliente já vê pelo mesmo link.');
     } catch (e) { erro(null, erroAmigavel(e)); }
     finally { btn.disabled = false; }
   });
@@ -490,7 +543,7 @@
   /* ---------- progresso ---------- */
   function infoProgresso() {
     const p = progAlvo, f = Math.max(0, Math.min(p.quantidade, Math.floor(Number($('#gFeitos').value) || 0)));
-    $('#gInfo').textContent = `de ${nf.format(p.quantidade)} · ${Math.floor(f / p.quantidade * 100)}% · faltam ${nf.format(p.quantidade - f)}`;
+    $('#gInfo').textContent = `de ${nf.format(p.quantidade)} · ${Math.floor(f / p.quantidade * 100)}% · faltam ${nf.format(p.quantidade - f)}` + (f >= p.quantidade ? ' · vai ficar "Pronto"' : '');
   }
   function abrirProgresso(p) {
     progAlvo = p;
@@ -498,9 +551,11 @@
     $('#gFeitos').value = p.feitos; $('#gFeitos').max = p.quantidade;
     $('#gMsg').value = p.mensagem || '';
     $('#gErro').textContent = '';
-    radiosEtapa($('#gEtapas'), 'gEtapa', p.etapa);
-    $('#gAtalhos').replaceChildren(...[5, 10, 25, 50].filter(n => n < p.quantidade).map(n => el('button', { class: 'btn', type: 'button', text: `+${n}`, onclick: () => ajustar(n) })),
-      el('button', { class: 'btn', type: 'button', text: 'Tudo pronto', onclick: () => { $('#gFeitos').value = p.quantidade; infoProgresso(); const r = document.querySelector('input[name="gEtapa"][value="pronto"]'); if (r && !fimEtapa(etapaEscolhida('gEtapa'))) r.checked = true; } }));
+    const pc = porChapa(p);
+    $('#gAtalhos').replaceChildren(
+      ...(pc ? [el('button', { class: 'btn', type: 'button', text: `+1 chapa (${pc})`, onclick: () => ajustar(pc) })] : []),
+      ...[5, 10].filter(n => n < p.quantidade && n !== pc).map(n => el('button', { class: 'btn', type: 'button', text: `+${n}`, onclick: () => ajustar(n) })),
+      el('button', { class: 'btn', type: 'button', text: 'Tudo pronto', onclick: () => { $('#gFeitos').value = p.quantidade; infoProgresso(); } }));
     infoProgresso();
     abrir($('#dlgProgresso'));
   }
@@ -511,12 +566,14 @@
   $('#btnSalvarProg').addEventListener('click', async () => {
     const p = progAlvo, f = Math.floor(Number($('#gFeitos').value));
     if (!Number.isInteger(f) || f < 0 || f > p.quantidade) { $('#gErro').textContent = `Use um número entre 0 e ${p.quantidade}.`; return; }
-    let etapa = etapaEscolhida('gEtapa');
-    if (etapa === 'fila' && f > 0) etapa = 'producao';
+    const campos = { feitos: f, mensagem: $('#gMsg').value.trim() };
+    if (p.etapa === 'fila' && f > 0) campos.etapa = 'producao';
+    if (p.etapa === 'pronto' && f < p.quantidade) campos.etapa = 'producao';
     const btn = $('#btnSalvarProg'); btn.disabled = true;
     try {
-      await salvarPedido(p.id, { feitos: f, etapa, mensagem: $('#gMsg').value.trim() });
-      fechar($('#dlgProgresso')); desenhar(); aviso('Progresso salvo. O cliente já vê a atualização.');
+      const novo = await salvarPedido(p.id, campos);
+      fechar($('#dlgProgresso')); desenhar();
+      aviso(novo.etapa === 'pronto' ? 'Tudo pronto! O cliente já vê "Pronto".' : 'Progresso salvo. O cliente já vê pelo mesmo link.');
     } catch (e) { $('#gErro').textContent = erroAmigavel(e); }
     finally { btn.disabled = false; }
   });
@@ -525,11 +582,11 @@
   function abrirLink(p, recemCriado) {
     const url = linkCliente(p);
     $('#tLink').textContent = recemCriado ? 'Pedido criado!' : 'Link do cliente';
-    $('#lTexto').textContent = (recemCriado ? 'Agora mande o link para o cliente acompanhar. ' : '') + 'Só quem tem o link consegue ver o pedido.';
+    $('#lTexto').textContent = (recemCriado ? 'Mande este link para o cliente uma vez só: ' : '') + 'o mesmo link mostra sempre a situação atual do pedido. Só quem tem o link consegue ver.';
     $('#lUrl').value = url;
     $('#btnAbrir').href = url;
     const primeiro = (p.cliente || '').split(' ')[0];
-    const texto = `Olá${primeiro ? ', ' + primeiro : ''}! Acompanhe a produção do seu pedido "${p.titulo}" por aqui: ${url}`;
+    const texto = `Olá${primeiro ? ', ' + primeiro : ''}! Aqui é da ${CT.NOME_ESTUDIO}. Acompanhe a produção do seu pedido "${p.titulo}" por este link: ${url}`;
     $('#btnWhats').href = p.telefone ? CT.linkWhats(p.telefone, texto) : `https://wa.me/?text=${encodeURIComponent(texto)}`;
     $('#btnWhats').textContent = p.telefone ? `Enviar para ${primeiro || 'o cliente'} no WhatsApp` : 'Enviar pelo WhatsApp';
     abrir($('#dlgLink'));
@@ -540,29 +597,9 @@
     catch (_) { $('#lUrl').select(); try { document.execCommand('copy'); aviso('Link copiado.'); } catch (__) { aviso('Selecione o link e copie.', true); } }
   });
 
-  /* ---------- configurações ---------- */
-  function abrirConfig() {
-    $('#cNome').value = config.nome_estudio || '';
-    $('#cWhats').value = config.whatsapp || '';
-    $('#cCor').value = (config.cor || '#6C5CE7').toLowerCase();
-    $('#cCorTxt').textContent = (config.cor || '#6C5CE7').toUpperCase();
-    $('#cConta').textContent = CT.sessao ? `Conectado como ${CT.sessao.email}` : '';
-    $('#cErro').textContent = '';
-    abrir($('#dlgConfig'));
-  }
-  $('#cCor').addEventListener('input', () => { $('#cCorTxt').textContent = $('#cCor').value.toUpperCase(); CT.aplicarCor($('#cCor').value); });
-  $('#dlgConfig').addEventListener('close', () => CT.aplicarCor(config.cor));
-  $('#btnSalvarCfg').addEventListener('click', async () => {
-    const nome = $('#cNome').value.trim(), w = digitos($('#cWhats').value);
-    if (!nome) { $('#cErro').textContent = 'Dê um nome ao estúdio.'; return; }
-    if (w && w.length < 10) { $('#cErro').textContent = 'WhatsApp incompleto: coloque DDD e número.'; return; }
-    try {
-      const r = await CT.pedir('/rest/v1/ct_config?id=eq.1', { metodo: 'PATCH', corpo: { nome_estudio: nome, whatsapp: w, cor: $('#cCor').value.toUpperCase(), atualizado_em: new Date().toISOString() }, cabecalhos: { prefer: 'return=representation' }, comLogin: true });
-      if (Array.isArray(r) && r[0]) config = r[0];
-      fechar($('#dlgConfig')); CT.aplicarCor(config.cor); desenhar(); aviso('Configurações salvas.');
-    } catch (e) { $('#cErro').textContent = erroAmigavel(e); }
-  });
-  $('#btnSair').addEventListener('click', async () => { await CT.sair(); fechar($('#dlgConfig')); modoLogin = 'entrar'; telaLogin('Você saiu.', 'ok'); });
+  /* ---------- conta ---------- */
+  function abrirConta() { $('#cConta').textContent = CT.sessao ? `Conectado como ${CT.sessao.email}` : ''; abrir($('#dlgConta')); }
+  $('#btnSair').addEventListener('click', async () => { await CT.sair(); fechar($('#dlgConta')); modoLogin = 'entrar'; telaLogin('Você saiu.', 'ok'); });
 
   /* ---------- início ---------- */
   async function iniciar() {
@@ -571,7 +608,7 @@
     if (!CT.sessao) return telaLogin();
     try {
       const admin = await CT.pedir('/rest/v1/rpc/ct_eh_admin', { metodo: 'POST', corpo: {}, comLogin: true });
-      if (admin !== true) { await CT.sair(); return telaLogin('Esta conta não é administradora do estúdio.', 'ruim'); }
+      if (admin !== true) { await CT.sair(); return telaLogin('Esta conta não tem acesso ao painel.', 'ruim'); }
       await carregar();
       desenhar();
     } catch (e) {
@@ -580,8 +617,8 @@
     }
   }
   iniciar();
-  // Mantém a lista em dia se você usar o painel em dois aparelhos.
-  setInterval(() => { if (document.visibilityState === 'visible' && CT.sessao && pedidos && !document.querySelector('dialog[open]')) carregar().then(() => { if ($('#lista')) desenharLista(); }).catch(() => {}); }, 60000);
+  // Mantém a lista em dia quando mais de uma pessoa usa a mesma conta.
+  setInterval(() => { if (document.visibilityState === 'visible' && CT.sessao && !document.querySelector('dialog[open]') && $('#lista')) carregar().then(desenharLista).catch(() => {}); }, 30000);
 })();
 </script>
 </body>

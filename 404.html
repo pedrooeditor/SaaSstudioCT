@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Acompanhe seu pedido | StudioCT 3D</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#F6ECDC">
+<!-- Funciona tanto em /?p=CODIGO quanto no link curto /p/CODIGO (servido pelo 404.html). -->
+<script>(function () { var m = location.pathname.match(/^(.*?\/)p\/[^\/]+\/?$/); if (m) document.write('<base href="' + m[1].replace(/"/g, '') + '">'); })();</script>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/estilo.css?v=2">
+<style>
+  .pagina { max-width: 560px; margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom)); display: grid; gap: 14px; }
+  .topo { display: grid; justify-items: center; gap: 4px; padding: 6px 0 2px; text-align: center; }
+  .topo img { width: 112px; height: auto; filter: drop-shadow(0 8px 14px rgb(120 80 20 / .25)); }
+  .topo small { color: var(--suave); font-size: 13px; letter-spacing: .04em; text-transform: uppercase; font-weight: 650; }
+  .titulo { margin: 8px 0 2px; font: 700 24px/1.2 var(--serifa); }
+  .ola { margin: 0; color: var(--suave); }
+  .tipo { display: inline-block; padding: 3px 12px; border-radius: 999px; background: #FBEBC4; color: #7A5410; font-size: 12.5px; font-weight: 700; }
+  .progresso { display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; margin-top: 16px; }
+  .anel { position: relative; width: 118px; height: 118px; }
+  .anel svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .anel circle { fill: none; stroke-width: 12; }
+  .anel .fundo { stroke: #EFE2CC; }
+  .anel .valor { stroke: url(#ouro); stroke-linecap: round; transition: stroke-dashoffset .8s ease; }
+  .anel b { position: absolute; inset: 0; display: grid; place-items: center; font: 700 27px var(--serifa); }
+  .numeros { display: grid; gap: 8px; }
+  .num { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding-bottom: 6px; border-bottom: 1px dashed var(--linha); }
+  .num:last-child { border: 0; padding: 0; }
+  .num span { color: var(--suave); font-size: 14px; }
+  .num b { font: 700 21px var(--serifa); }
+  .etapas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 0; padding: 0; list-style: none; }
+  .etapas li { display: grid; justify-items: center; gap: 6px; text-align: center; font-size: 12px; font-weight: 650; color: var(--suave); position: relative; }
+  .etapas li::before { content: ""; position: absolute; top: 12px; left: -50%; right: 50%; height: 3px; background: var(--linha); }
+  .etapas li:first-child::before { display: none; }
+  .etapas li.feita::before, .etapas li.atual::before { background: var(--ouro); }
+  .etapas .bola { position: relative; z-index: 1; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--cartao); border: 3px solid var(--linha); color: var(--texto); font-size: 13px; font-weight: 800; }
+  .etapas li.feita .bola { background: linear-gradient(180deg, var(--ouro-claro), var(--ouro)); border-color: var(--cor); }
+  .etapas li.atual .bola { border-color: var(--cor); box-shadow: 0 0 0 4px rgb(217 169 63 / .3); }
+  .etapas li.atual { color: var(--texto); }
+  .faixa { padding: 13px 15px; border-radius: 14px; font-weight: 650; }
+  .faixa.alerta { background: var(--alerta-bg); color: var(--alerta); }
+  .faixa.ok { background: var(--ok-bg); color: var(--ok); }
+  .faixa.perigo { background: var(--perigo-bg); color: var(--perigo); }
+  .bloco h2 { margin: 0 0 10px; font-weight: 700; font-size: 13px; line-height: 1.3; font-family: inherit; color: var(--suave); text-transform: uppercase; letter-spacing: .06em; }
+  .data-grande { font: 700 20px/1.25 var(--serifa); }
+  .contagem { margin-top: 2px; font-weight: 650; }
+  .contagem.atraso { color: var(--alerta); }
+  .detalhe { margin: 12px 0 0; color: var(--suave); font-size: 14.5px; }
+  .detalhe b { color: var(--texto); }
+  .divisor { border: 0; border-top: 1px solid var(--linha); margin: 14px 0; }
+  .recado p { margin: 0; white-space: pre-wrap; font-size: 15.5px; }
+  .rodape { text-align: center; color: var(--suave); font-size: 13px; }
+  .btn-whats { width: 100%; min-height: 52px; font-size: 16px; }
+  .vazio { text-align: center; padding: 34px 20px; }
+  .vazio h1 { font: 700 21px var(--serifa); margin: 0 0 6px; }
+  .vazio p { margin: 0; color: var(--suave); }
+  .carregando { text-align: center; padding: 60px 0; color: var(--suave); }
+  @media (max-width: 380px) { .progresso { grid-template-columns: 1fr; justify-items: center; } .numeros { width: 100%; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs><linearGradient id="ouro" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F1D488"/><stop offset=".5" stop-color="#D9A93F"/><stop offset="1" stop-color="#A97B22"/></linearGradient></defs>
+</svg>
+<main class="pagina" id="app" aria-live="polite">
+  <p class="carregando">Carregando seu pedido…</p>
+</main>
+<noscript><p style="text-align:center;padding:20px">Ative o JavaScript para acompanhar o pedido.</p></noscript>
+
+<script src="config.js?v=2"></script>
+<script src="assets/comum.js?v=2"></script>
+<script>
+(() => {
+  'use strict';
+  const { el, nf } = CT;
+  const app = document.getElementById('app');
+  const curto = location.pathname.match(/\/p\/([^/]+)\/?$/);
+  const codigo = decodeURIComponent((curto && curto[1]) || new URLSearchParams(location.search).get('p') || location.hash.replace(/^#/, '') || '').trim();
+  let ultimo = null, diferencaRelogio = 0;
+
+  const topo = () => el('header', { class: 'topo' },
+    el('img', { src: 'assets/logo.webp', alt: CT.NOME_ESTUDIO, width: '112', height: '132' }),
+    el('small', { text: 'Acompanhamento do pedido' }));
+
+  function semPedido(titulo, texto) {
+    document.title = `${titulo} | ${CT.NOME_ESTUDIO}`;
+    app.replaceChildren(topo(), el('div', { class: 'cartao vazio' }, el('h1', { text: titulo }), el('p', { text: texto })));
+  }
+
+  function anel(pct) {
+    const r = 50, c = 2 * Math.PI * r;
+    const svg = new DOMParser().parseFromString(
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 118 118" aria-hidden="true"><circle class="fundo" cx="59" cy="59" r="${r}"/><circle class="valor" cx="59" cy="59" r="${r}" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - pct / 100)}"/></svg>`, 'image/svg+xml').documentElement;
+    return el('div', { class: 'anel', role: 'img', 'aria-label': `${pct}% pronto` }, document.importNode(svg, true), el('b', { text: `${pct}%` }));
+  }
+
+  function desenhar(p) {
+    ultimo = p;
+    const agora = Date.now() + diferencaRelogio;
+    const envio = CT.ENVIO[p.envio] || CT.ENVIO.entrega;
+    document.title = `${p.titulo} | ${CT.NOME_ESTUDIO}`;
+    const pct = Math.floor(p.feitos / p.quantidade * 100);
+    const faltam = p.quantidade - p.feitos;
+    const etapa = ['pausado', 'acabamento'].includes(p.etapa) ? 'producao' : p.etapa;
+    const pronto = etapa === 'pronto' || etapa === 'entregue';
+
+    // Etapas: Na fila → Em produção → Pronto → Entregue/Postado/Retirado
+    const iAtual = CT.ETAPAS.indexOf(etapa);
+    const etapas = el('ol', { class: 'etapas', 'aria-label': 'Etapas do pedido' },
+      CT.ETAPAS.map((e, i) => {
+        const feita = i < iAtual || (i === iAtual && e === 'entregue');
+        return el('li', { class: feita ? 'feita' : i === iAtual ? 'atual' : '', 'aria-current': i === iAtual ? 'step' : null },
+          el('span', { class: 'bola', text: feita ? '✓' : '' }), CT.nomeEtapa(e, p.envio));
+      }));
+
+    let faixa = null;
+    if (etapa === 'cancelado') faixa = el('div', { class: 'faixa perigo', text: 'Este pedido foi cancelado. Fale com a gente se tiver dúvidas.' });
+    else if (etapa === 'pronto') faixa = el('div', { class: 'faixa ok', text: envio.prontoMsg });
+    else if (etapa === 'entregue') faixa = el('div', { class: 'faixa ok', text: envio.fimMsg });
+
+    // Produção e envio
+    let producao = null;
+    if (!pronto && etapa !== 'cancelado') {
+      const resta = CT.data(p.termino).getTime() - agora;
+      const atraso = resta < 0;
+      producao = el('section', { class: 'cartao bloco' },
+        el('h2', { text: 'Término previsto da produção' }),
+        el('div', { class: 'data-grande', text: CT.quando(p.termino) }),
+        el('div', { class: 'contagem' + (atraso ? ' atraso' : ''), text: atraso ? 'A produção está levando um pouco mais que o previsto. Já já atualizamos por aqui.' : `Faltam ${CT.duracao(resta)}` }),
+        p.ritmo_horas ? el('p', { class: 'detalhe' }, 'No ritmo atual, ', el('b', { text: `${nf.format(faltam)} restante${faltam === 1 ? '' : 's'} em cerca de ${CT.duracao(Number(p.ritmo_horas) * 3600000)}` }), '.') : null,
+        el('hr', { class: 'divisor' }),
+        el('h2', { text: p.envio === 'retirada' ? 'Retirada' : 'Entrega' }),
+        el('p', { class: 'detalhe', style: 'margin:0' }, el('b', { text: envio.nome + ': ' }), envio.prazo));
+    }
+
+    const recado = p.mensagem && p.mensagem.trim()
+      ? el('section', { class: 'cartao bloco recado' }, el('h2', { text: `Recado da ${CT.NOME_ESTUDIO}` }), el('p', { text: p.mensagem }))
+      : null;
+
+    const whats = p.whatsapp
+      ? el('a', { class: 'btn btn-cor btn-whats', href: CT.linkWhats(p.whatsapp, `Olá! Sobre o meu pedido "${p.titulo}": ${location.href}`), target: '_blank', rel: 'noopener noreferrer' }, 'Falar com a gente no WhatsApp')
+      : null;
+
+    app.replaceChildren(...[
+      topo(),
+      el('section', { class: 'cartao' },
+        p.tipo ? el('span', { class: 'tipo', text: p.tipo }) : null,
+        el('h1', { class: 'titulo', text: p.titulo }),
+        p.cliente ? el('p', { class: 'ola', text: `Olá, ${p.cliente}! Veja como está o seu pedido.` }) : null,
+        el('div', { class: 'progresso' }, anel(pct),
+          el('div', { class: 'numeros' },
+            el('div', { class: 'num' }, el('span', { text: 'Prontos' }), el('b', { text: nf.format(p.feitos) })),
+            el('div', { class: 'num' }, el('span', { text: 'Faltam' }), el('b', { text: nf.format(faltam) })),
+            el('div', { class: 'num' }, el('span', { text: 'Total do pedido' }), el('b', { text: nf.format(p.quantidade) }))))),
+      faixa,
+      etapa === 'cancelado' ? null : el('section', { class: 'cartao' }, etapas),
+      producao, recado, whats,
+      el('p', { class: 'rodape', text: `Atualizado ${CT.relativo(p.atualizado_em, agora)} · esta página se atualiza sozinha` })
+    ].filter(Boolean));
+  }
+
+  async function carregar(primeira) {
+    if (!CT.configurado) return semPedido('Página em configuração', 'Estamos configurando o acompanhamento.');
+    if (codigo.length < 12) return semPedido('Link incompleto', 'Confira se você abriu o link inteiro que enviamos.');
+    try {
+      const p = await CT.pedir('/rest/v1/rpc/ct_pedido_publico', { metodo: 'POST', corpo: { p_codigo: codigo } });
+      if (!p) return semPedido('Pedido não encontrado', 'Este link não corresponde a nenhum pedido. Peça o link de novo para a gente.');
+      diferencaRelogio = CT.data(p.agora).getTime() - Date.now();
+      desenhar(p);
+    } catch (e) {
+      if (primeira || !ultimo) semPedido('Não deu para carregar agora', e.status === 0 ? 'Sem conexão. Verifique a internet e tente de novo.' : 'Tente de novo em instantes.');
+    }
+  }
+  carregar(true);
+  // O mesmo link mostra sempre a situação atual: atualiza sozinho a cada 30 s e ao voltar para a página.
+  setInterval(() => { if (document.visibilityState === 'visible') carregar(false); }, 30000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') carregar(false); });
+})();
+</script>
+</body>
+</html>
