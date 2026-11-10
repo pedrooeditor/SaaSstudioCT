@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Painel de pedidos</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#F4F2FB">
+<link rel="stylesheet" href="assets/estilo.css?v=1">
+<style>
+  .pagina { max-width: 980px; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom)); }
+  .topo { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .logo { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: var(--cor); color: #fff; font-weight: 800; font-size: 18px; flex: none; }
+  .topo .nome { flex: 1; min-width: 0; }
+  .topo b { display: block; font-size: 18px; }
+  .topo small { color: var(--suave); }
+  .resumo { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .resumo button { display: grid; justify-items: start; padding: 12px 14px; border: 2px solid transparent; border-radius: 14px; background: #fff; box-shadow: var(--sombra); text-align: left; }
+  .resumo button b { font-size: 24px; line-height: 1.1; }
+  .resumo button span { color: var(--suave); font-size: 12.5px; font-weight: 650; }
+  .resumo button.on { border-color: var(--cor); }
+  .resumo button.atraso b { color: var(--alerta); }
+  .busca { position: relative; display: block; margin-bottom: 14px; }
+  .busca input { width: 100%; min-height: 46px; padding: 0 14px 0 40px; border: 1px solid var(--linha); border-radius: 12px; background: #fff; font-size: 16px; }
+  .busca svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--suave); }
+  .lista { display: grid; gap: 12px; }
+  .pedido { display: grid; gap: 10px; }
+  .pedido-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .pedido h3 { margin: 0; font-size: 17px; line-height: 1.25; }
+  .pedido .sub { color: var(--suave); font-size: 13.5px; }
+  .pedido .meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; font-size: 14px; }
+  .pedido .meta b { font-size: 15px; }
+  .pedido .meta .atraso { color: var(--alerta); font-weight: 700; }
+  .acoes { display: flex; flex-wrap: wrap; gap: 8px; }
+  .acoes .btn { min-height: 40px; padding: 0 12px; font-size: 14px; }
+  .acoes .mais { margin-left: auto; }
+  .vazio { text-align: center; padding: 40px 16px; color: var(--suave); }
+  .vazio b { display: block; color: var(--texto); font-size: 17px; margin-bottom: 4px; }
+  .fab { position: fixed; z-index: 30; right: max(20px, env(safe-area-inset-right)); bottom: calc(20px + env(safe-area-inset-bottom));
+    display: inline-flex; align-items: center; gap: 8px; min-height: 54px; padding: 0 22px; border: 0; border-radius: 999px;
+    background: var(--cor); color: #fff; font-size: 16px; font-weight: 750; box-shadow: 0 12px 30px -10px color-mix(in srgb, var(--cor) 80%, transparent); }
+  .grade { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grade .inteiro { grid-column: 1 / -1; }
+  .prazo-linha { display: grid; grid-template-columns: 1fr 120px; gap: 8px; }
+  .previsao-viva { padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--cor) 8%, #fff); font-size: 14px; }
+  .etapa-opcoes { display: flex; flex-wrap: wrap; gap: 8px; }
+  .etapa-opcoes label { position: relative; }
+  .etapa-opcoes input { position: absolute; opacity: 0; pointer-events: none; }
+  .etapa-opcoes span { display: inline-flex; min-height: 38px; align-items: center; padding: 0 12px; border: 1px solid var(--linha); border-radius: 999px; font-size: 14px; font-weight: 650; cursor: pointer; }
+  .etapa-opcoes input:checked + span { background: var(--cor); border-color: var(--cor); color: #fff; }
+  .etapa-opcoes input:focus-visible + span { outline: 2px solid var(--cor); outline-offset: 2px; }
+  .contador { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
+  .contador input { text-align: center; font-size: 28px !important; font-weight: 800; min-height: 60px !important; }
+  .contador .icone-btn { width: 56px; height: 56px; font-size: 22px; font-weight: 800; }
+  .atalhos { display: flex; flex-wrap: wrap; gap: 8px; }
+  .atalhos .btn { flex: 1 1 70px; min-height: 42px; }
+  .link-box { display: grid; gap: 10px; }
+  .link-box input { font-size: 14px; }
+  .login { max-width: 420px; margin: 8vh auto 0; }
+  .login h1 { margin: 0 0 4px; font-size: 22px; }
+  .login p { margin: 0 0 16px; color: var(--suave); }
+  .login form { display: grid; gap: 12px; }
+  .link-txt { border: 0; background: none; padding: 4px 0; color: var(--cor); font-weight: 700; text-decoration: underline; }
+  .linha-links { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+  .msg { font-size: 14px; font-weight: 600; }
+  .msg.ok { color: var(--ok); }
+  .msg.ruim { color: var(--perigo); }
+  .cor-linha { display: flex; gap: 10px; align-items: center; }
+  .cor-linha input[type=color] { width: 56px; height: 44px; padding: 2px; border-radius: 10px; border: 1px solid var(--linha); background: #fff; }
+  .aviso button { margin-left: 10px; border: 0; border-radius: 8px; padding: 5px 10px; background: rgb(255 255 255 / .2); color: #fff; font-weight: 700; }
+  @media (max-width: 720px) {
+    .resumo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grade { grid-template-columns: 1fr; }
+    .fab { left: 16px; right: 16px; justify-content: center; }
+    .acoes .mais { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-busca" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-mais" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  <symbol id="i-engr" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+</svg>
+
+<main class="pagina" id="app">
+  <p style="text-align:center;padding:60px 0;color:var(--suave)">Carregando…</p>
+</main>
+<button class="fab" type="button" id="btnNovo" hidden><svg class="ic"><use href="#i-mais"/></svg>Novo pedido</button>
+
+<!-- Pedido: criar e editar -->
+<dialog id="dlgPedido" aria-labelledby="tPedido">
+  <div class="dlg-topo"><h2 id="tPedido">Novo pedido</h2><button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
+  <div class="dlg-corpo">
+    <div class="grade">
+      <div class="campo inteiro"><label for="pTitulo">Título do pedido *</label><input id="pTitulo" maxlength="120" placeholder="Ex.: Chaveiros formatura 3º B"></div>
+      <div class="campo"><label for="pTipo">Tipo do pedido</label><input id="pTipo" list="tipos" maxlength="60" placeholder="Ex.: Chaveiro"></div>
+      <div class="campo"><label for="pQtd">Quantidade *</label><input id="pQtd" type="number" inputmode="numeric" min="1" step="1" placeholder="Ex.: 100"></div>
+      <div class="campo"><label for="pCliente">Nome do cliente</label><input id="pCliente" maxlength="120" autocomplete="off"></div>
+      <div class="campo"><label for="pTel">WhatsApp do cliente</label><input id="pTel" type="tel" inputmode="tel" placeholder="(11) 99999-0000"><small>Para mandar o link direto para ele.</small></div>
+      <div class="campo inteiro">
+        <span class="rotulo">Tempo para ficar pronto *</span>
+        <div class="prazo-linha">
+          <input id="pPrazo" type="number" inputmode="decimal" min="0.5" step="0.5" aria-label="Tempo para ficar pronto" placeholder="Ex.: 5">
+          <select id="pUnidade" aria-label="Unidade do tempo"><option value="dias">dias</option><option value="horas">horas</option></select>
+        </div>
+      </div>
+      <div class="campo"><label for="pInicio">Início da produção</label><input id="pInicio" type="datetime-local"></div>
+      <div class="campo"><label for="pFeitos">Já prontos</label><input id="pFeitos" type="number" inputmode="numeric" min="0" step="1" value="0"></div>
+      <div class="previsao-viva inteiro" id="pPrevisao"></div>
+      <div class="campo inteiro"><span class="rotulo">Etapa</span><div class="etapa-opcoes" id="pEtapas"></div></div>
+      <div class="campo inteiro"><label for="pMsg">Recado para o cliente</label><textarea id="pMsg" maxlength="600" placeholder="Aparece na página do cliente. Ex.: Começamos a impressão hoje!"></textarea></div>
+      <div class="campo"><label for="pValor">Valor do pedido (R$)</label><input id="pValor" inputmode="decimal" placeholder="Ex.: 450,00"><small>Só você vê.</small></div>
+      <div class="campo"><label for="pPago">Já recebido (R$)</label><input id="pPago" inputmode="decimal" placeholder="Ex.: 225,00"><small>Só você vê.</small></div>
+      <div class="campo inteiro"><label for="pNotas">Notas internas</label><textarea id="pNotas" maxlength="2000" placeholder="Cor, material, detalhes combinados… Só você vê."></textarea></div>
+    </div>
+    <p class="erro" id="pErro"></p>
+  </div>
+  <div class="dlg-pe">
+    <button class="btn btn-perigo" type="button" id="btnExcluir" hidden>Excluir</button>
+    <button class="btn" type="button" data-fechar>Cancelar</button>
+    <button class="btn btn-cor" type="button" id="btnSalvarPedido">Salvar pedido</button>
+  </div>
+</dialog>
+<datalist id="tipos"><option value="Chaveiro"><option value="Miniatura"><option value="Brinde"><option value="Peça técnica"><option value="Protótipo"><option value="Decoração"><option value="Suporte"></datalist>
+
+<!-- Atualizar progresso -->
+<dialog id="dlgProgresso" aria-labelledby="tProg">
+  <div class="dlg-topo"><h2 id="tProg">Atualizar progresso</h2><button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
+  <div class="dlg-corpo">
+    <div class="campo">
+      <span class="rotulo" id="gTitulo"></span>
+      <div class="contador">
+        <button class="icone-btn" type="button" id="gMenos" aria-label="Menos um">−</button>
+        <input id="gFeitos" type="number" inputmode="numeric" min="0" step="1" aria-label="Quantidade pronta">
+        <button class="icone-btn" type="button" id="gMais" aria-label="Mais um">+</button>
+      </div>
+      <small id="gInfo"></small>
+    </div>
+    <div class="atalhos" id="gAtalhos"></div>
+    <div class="campo"><span class="rotulo">Etapa</span><div class="etapa-opcoes" id="gEtapas"></div></div>
+    <div class="campo"><label for="gMsg">Recado para o cliente (opcional)</label><textarea id="gMsg" maxlength="600"></textarea></div>
+    <p class="erro" id="gErro"></p>
+  </div>
+  <div class="dlg-pe"><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-cor" type="button" id="btnSalvarProg">Salvar</button></div>
+</dialog>
+
+<!-- Link do cliente -->
+<dialog id="dlgLink" aria-labelledby="tLink">
+  <div class="dlg-topo"><h2 id="tLink">Link do cliente</h2><button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
+  <div class="dlg-corpo link-box">
+    <p style="margin:0" id="lTexto">Mande este link para o cliente acompanhar o pedido. Só quem tem o link consegue ver.</p>
+    <div class="campo"><label for="lUrl">Link</label><input id="lUrl" readonly></div>
+    <button class="btn" type="button" id="btnCopiar">Copiar link</button>
+    <a class="btn btn-cor" id="btnWhats" target="_blank" rel="noopener noreferrer">Enviar pelo WhatsApp</a>
+    <a class="btn" id="btnAbrir" target="_blank" rel="noopener noreferrer">Ver como o cliente vê</a>
+  </div>
+</dialog>
+
+<!-- Configurações -->
+<dialog id="dlgConfig" aria-labelledby="tCfg">
+  <div class="dlg-topo"><h2 id="tCfg">Configurações</h2><button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
+  <div class="dlg-corpo">
+    <div class="campo"><label for="cNome">Nome do estúdio</label><input id="cNome" maxlength="80"><small>Aparece no topo da página do cliente.</small></div>
+    <div class="campo"><label for="cWhats">Seu WhatsApp</label><input id="cWhats" type="tel" inputmode="tel" placeholder="(11) 99999-0000"><small>O cliente usa para falar com você pelo botão da página.</small></div>
+    <div class="campo"><label for="cCor">Cor da marca</label><div class="cor-linha"><input id="cCor" type="color"><span id="cCorTxt"></span></div></div>
+    <p class="erro" id="cErro"></p>
+    <hr style="border:0;border-top:1px solid var(--linha);width:100%">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span id="cConta" style="color:var(--suave);font-size:14px"></span><button class="btn" type="button" id="btnSair">Sair</button></div>
+  </div>
+  <div class="dlg-pe"><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-cor" type="button" id="btnSalvarCfg">Salvar</button></div>
+</dialog>
+
+<!-- Confirmação -->
+<dialog id="dlgConfirma" aria-labelledby="tConf">
+  <div class="dlg-topo"><h2 id="tConf">Confirmar</h2></div>
+  <div class="dlg-corpo"><p style="margin:0" id="confTexto"></p></div>
+  <div class="dlg-pe"><button class="btn" type="button" id="confNao">Cancelar</button><button class="btn btn-perigo" type="button" id="confSim">Confirmar</button></div>
+</dialog>
+
+<div class="aviso" id="aviso" role="status" aria-live="polite"></div>
+
+<script src="config.js?v=1"></script>
+<script src="assets/comum.js?v=1"></script>
+<script>
+(() => {
+  'use strict';
+  const { el, nf } = CT;
+  const $ = s => document.querySelector(s);
+  const app = $('#app');
+  let pedidos = [], config = { nome_estudio: 'Studio CT', whatsapp: '', cor: '#6C5CE7' };
+  const vista = { filtro: 'andamento', busca: '' };
+  let editando = null, progAlvo = null, modoLogin = 'entrar', tokenRecuperacao = '';
+
+  /* ---------- utilidades ---------- */
+  function abrir(d) { if (typeof d.showModal === 'function') { try { if (!d.open) d.showModal(); return; } catch (_) {} } d.setAttribute('open', ''); }
+  function fechar(d) { if (typeof d.close === 'function' && d.open) d.close(); else d.removeAttribute('open'); }
+  document.querySelectorAll('[data-fechar]').forEach(b => b.addEventListener('click', () => fechar(b.closest('dialog'))));
+  let avisoT;
+  function aviso(msg, ruim = false, acao) {
+    const a = $('#aviso');
+    a.replaceChildren(el('span', { text: msg }), acao ? el('button', { type: 'button', text: acao.rotulo, onclick: () => { a.classList.remove('on'); acao.fn(); } }) : null);
+    a.classList.toggle('ruim', ruim); a.classList.add('on');
+    clearTimeout(avisoT); avisoT = setTimeout(() => a.classList.remove('on'), acao ? 7000 : 3200);
+  }
+  function confirmar(texto, botao = 'Confirmar') {
+    const d = $('#dlgConfirma');
+    $('#confTexto').textContent = texto; $('#confSim').textContent = botao;
+    return new Promise(res => {
+      const fim = v => { fechar(d); res(v); };
+      $('#confSim').onclick = () => fim(true); $('#confNao').onclick = () => fim(false);
+      d.oncancel = () => res(false);
+      abrir(d);
+    });
+  }
+  const numero = v => { const s = String(v || '').trim().replace(/\s|R\$/g, ''); if (!s) return null; const n = Number(s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s); return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : NaN; };
+  const digitos = v => String(v || '').replace(/\D/g, '');
+  const previsaoDe = p => new Date(CT.data(p.inicio).getTime() + Number(p.prazo_horas) * 3600000);
+  const linkCliente = p => new URL('./?p=' + p.codigo, location.href).href;
+  const fimEtapa = e => ['pronto', 'entregue', 'cancelado'].includes(e);
+  const atrasado = p => !fimEtapa(p.etapa) && previsaoDe(p).getTime() < Date.now();
+  const paraLocal = d => { const x = new Date(d.getTime() - d.getTimezoneOffset() * 60000); return x.toISOString().slice(0, 16); };
+  function erroAmigavel(e) {
+    if (e.status === 0) return 'Sem conexão com o servidor. Verifique a internet.';
+    if (e.status === 401) return 'Sua sessão venceu. Entre de novo.';
+    if (/row-level security|permission/i.test(e.message)) return 'Esta conta não tem permissão de administrador.';
+    if (/ct_feitos_validos/.test(e.message)) return 'A quantidade pronta não pode passar do total do pedido.';
+    return e.message || 'Algo deu errado. Tente de novo.';
+  }
+
+  /* ---------- login ---------- */
+  function telaLogin(msg, tipo) {
+    $('#btnNovo').hidden = true;
+    const nova = modoLogin === 'nova', criar = modoLogin === 'criar';
+    const email = el('input', { id: 'lgEmail', type: 'email', autocomplete: 'username', placeholder: 'voce@gmail.com', value: (CT.sessao && CT.sessao.email) || '' });
+    const senha = el('input', { id: 'lgSenha', type: 'password', autocomplete: criar || nova ? 'new-password' : 'current-password', minlength: '8' });
+    const senha2 = el('input', { id: 'lgSenha2', type: 'password', autocomplete: 'new-password' });
+    const m = el('p', { class: 'msg ' + (tipo || ''), id: 'lgMsg', text: msg || '' });
+    const botao = el('button', { class: 'btn btn-cor', type: 'submit', text: nova ? 'Salvar nova senha' : criar ? 'Criar conta' : 'Entrar' });
+    const form = el('form', { novalidate: true },
+      nova ? null : el('div', { class: 'campo' }, el('label', { for: 'lgEmail', text: 'E-mail' }), email),
+      el('div', { class: 'campo' }, el('label', { for: 'lgSenha', text: nova ? 'Nova senha' : 'Senha' }), senha),
+      criar || nova ? el('div', { class: 'campo' }, el('label', { for: 'lgSenha2', text: 'Repita a senha' }), senha2) : null,
+      botao, m,
+      nova ? null : el('div', { class: 'linha-links' },
+        el('button', { class: 'link-txt', type: 'button', text: criar ? 'Já tenho conta: entrar' : 'Criar conta', onclick: () => { modoLogin = criar ? 'entrar' : 'criar'; telaLogin(); } }),
+        criar ? null : el('button', { class: 'link-txt', type: 'button', text: 'Esqueci a senha', onclick: esqueci })));
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const em = email.value.trim().toLowerCase(), s = senha.value;
+      const falar = (t, k = 'ruim') => { m.textContent = t; m.className = 'msg ' + k; };
+      if (!nova && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return falar('Digite um e-mail válido.');
+      if (s.length < 8) return falar('A senha precisa ter pelo menos 8 caracteres.');
+      if ((criar || nova) && s !== senha2.value) return falar('As duas senhas não estão iguais.');
+      botao.disabled = true;
+      try {
+        if (nova) {
+          const r = await fetch(CT.URL_BASE + '/auth/v1/user', { method: 'PUT', headers: { apikey: window.STUDIOCT_CONFIG.supabaseKey, authorization: 'Bearer ' + tokenRecuperacao, 'content-type': 'application/json' }, body: JSON.stringify({ password: s }) }).catch(() => null);
+          if (!r || !r.ok) throw Object.assign(new Error('Não consegui trocar a senha. Peça outro link.'), { status: r ? r.status : 0 });
+          modoLogin = 'entrar'; tokenRecuperacao = '';
+          return telaLogin('Senha trocada! Entre com a senha nova.', 'ok');
+        }
+        if (criar) {
+          const d = await CT.pedir('/auth/v1/signup?redirect_to=' + encodeURIComponent(location.origin + location.pathname), { metodo: 'POST', corpo: { email: em, password: s } });
+          if (d && d.access_token) { CT.guardarSessao(d); return iniciar(); }
+          modoLogin = 'entrar';
+          return telaLogin(`Conta criada! Abra o link que enviamos para ${em} e depois entre aqui.`, 'ok');
+        }
+        falar('Entrando…', '');
+        await CT.entrar(em, s);
+        await iniciar();
+      } catch (err) {
+        const t = String(err.message || '');
+        falar(/not confirmed/i.test(t) ? 'Confirme o e-mail primeiro: toque no link que enviamos (veja o spam).'
+          : /invalid login|invalid credentials/i.test(t) ? 'E-mail ou senha errados.'
+          : err.status === 429 || /rate limit/i.test(t) ? 'Muitas tentativas seguidas. Espere alguns minutos.'
+          : erroAmigavel(err));
+      } finally { botao.disabled = false; }
+    });
+    async function esqueci() {
+      const em = email.value.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { m.textContent = 'Digite seu e-mail e toque de novo em "Esqueci a senha".'; m.className = 'msg ruim'; return; }
+      try {
+        await CT.pedir('/auth/v1/recover?redirect_to=' + encodeURIComponent(location.origin + location.pathname), { metodo: 'POST', corpo: { email: em } });
+        m.textContent = `Se ${em} tiver conta, chegará um link para criar uma senha nova.`; m.className = 'msg ok';
+      } catch (err) { m.textContent = erroAmigavel(err); m.className = 'msg ruim'; }
+    }
+    app.replaceChildren(el('section', { class: 'cartao login' },
+      el('h1', { text: nova ? 'Nova senha' : 'Painel de pedidos' }),
+      el('p', { text: nova ? 'Crie uma senha nova para sua conta.' : 'Entre com a conta de administrador do estúdio.' }), form));
+    (nova ? senha : email).focus();
+  }
+
+  // Volta dos links do e-mail (confirmação ou senha esquecida).
+  function retornoEmail() {
+    if (!location.hash || location.hash.length < 5) return false;
+    const h = new URLSearchParams(location.hash.slice(1));
+    if (!h.get('access_token') && !h.get('error')) return false;
+    history.replaceState(null, '', location.pathname + location.search);
+    if (h.get('error')) { telaLogin('Esse link venceu ou já foi usado. Peça outro.', 'ruim'); return true; }
+    if (h.get('type') === 'recovery') { tokenRecuperacao = h.get('access_token'); modoLogin = 'nova'; telaLogin(); return true; }
+    CT.guardarSessao({ access_token: h.get('access_token'), refresh_token: h.get('refresh_token'), expires_in: Number(h.get('expires_in')) || 3600, expires_at: Number(h.get('expires_at')) || 0 });
+    return false;
+  }
+
+  /* ---------- dados ---------- */
+  async function carregar() {
+    const [lista, cfg] = await Promise.all([
+      CT.pedir('/rest/v1/ct_pedidos?select=*&order=criado_em.desc', { comLogin: true }),
+      CT.pedir('/rest/v1/ct_config?select=*&id=eq.1', { comLogin: true })
+    ]);
+    pedidos = Array.isArray(lista) ? lista : [];
+    if (Array.isArray(cfg) && cfg[0]) config = cfg[0];
+    CT.aplicarCor(config.cor);
+  }
+  async function salvarPedido(id, campos) {
+    const r = await CT.pedir(id ? `/rest/v1/ct_pedidos?id=eq.${id}` : '/rest/v1/ct_pedidos', { metodo: id ? 'PATCH' : 'POST', corpo: campos, cabecalhos: { prefer: 'return=representation' }, comLogin: true });
+    const novo = Array.isArray(r) ? r[0] : r;
+    if (!novo) throw new Error('O servidor não confirmou a gravação.');
+    const i = pedidos.findIndex(p => p.id === novo.id);
+    if (i >= 0) pedidos[i] = novo; else pedidos.unshift(novo);
+    return novo;
+  }
+
+  /* ---------- lista ---------- */
+  const FILTROS = [
+    { id: 'andamento', nome: 'Em andamento', teste: p => !fimEtapa(p.etapa) },
+    { id: 'atrasados', nome: 'Atrasados', teste: atrasado },
+    { id: 'prontos', nome: 'Prontos', teste: p => p.etapa === 'pronto' },
+    { id: 'entregues', nome: 'Entregues', teste: p => p.etapa === 'entregue' || p.etapa === 'cancelado' }
+  ];
+  function desenhar() {
+    $('#btnNovo').hidden = false;
+    const f = FILTROS.find(x => x.id === vista.filtro) || FILTROS[0];
+    const q = vista.busca.trim().toLowerCase();
+    const visiveis = pedidos.filter(f.teste).filter(p => !q || [p.titulo, p.cliente, p.tipo].join(' ').toLowerCase().includes(q));
+    const resumo = el('div', { class: 'resumo', role: 'group', 'aria-label': 'Filtrar pedidos' },
+      FILTROS.map(x => el('button', { type: 'button', class: (x.id === vista.filtro ? 'on ' : '') + (x.id === 'atrasados' && pedidos.some(atrasado) ? 'atraso' : ''), 'aria-pressed': String(x.id === vista.filtro), onclick: () => { vista.filtro = x.id; desenhar(); } },
+        el('b', { text: String(pedidos.filter(x.teste).length) }), el('span', { text: x.nome }))));
+    const busca = el('label', { class: 'busca' }, el('span', { class: 'sr', text: 'Buscar' }), svg('i-busca'),
+      el('input', { type: 'search', placeholder: 'Buscar por título, cliente ou tipo', value: vista.busca, oninput: e => { vista.busca = e.target.value; desenharLista(); } }));
+    app.replaceChildren(
+      el('header', { class: 'topo' },
+        el('div', { class: 'logo', 'aria-hidden': 'true', text: (config.nome_estudio || 'S').trim().charAt(0).toUpperCase() }),
+        el('div', { class: 'nome' }, el('b', { text: config.nome_estudio }), el('small', { text: 'Painel de pedidos' })),
+        el('button', { class: 'icone-btn', type: 'button', 'aria-label': 'Configurações', title: 'Configurações', onclick: abrirConfig }, svg('i-engr'))),
+      resumo, busca, el('div', { class: 'lista', id: 'lista' }));
+    desenharLista(visiveis);
+  }
+  function desenharLista(pre) {
+    const f = FILTROS.find(x => x.id === vista.filtro) || FILTROS[0];
+    const q = vista.busca.trim().toLowerCase();
+    const visiveis = pre || pedidos.filter(f.teste).filter(p => !q || [p.titulo, p.cliente, p.tipo].join(' ').toLowerCase().includes(q));
+    const lista = $('#lista');
+    if (!lista) return;
+    if (!visiveis.length) {
+      lista.replaceChildren(el('div', { class: 'cartao vazio' },
+        el('b', { text: pedidos.length ? 'Nenhum pedido aqui' : 'Nenhum pedido ainda' }),
+        pedidos.length ? 'Troque o filtro ou a busca.' : 'Toque em "Novo pedido" para cadastrar o primeiro.'));
+      return;
+    }
+    lista.replaceChildren(...visiveis.map(cartao));
+  }
+  function svg(id) {
+    const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('class', 'ic');
+    const u = document.createElementNS('http://www.w3.org/2000/svg', 'use'); u.setAttribute('href', '#' + id); s.append(u); return s;
+  }
+  function cartao(p) {
+    const pct = Math.floor(p.feitos / p.quantidade * 100);
+    const prev = previsaoDe(p), resta = prev.getTime() - Date.now();
+    const atraso = atrasado(p);
+    return el('article', { class: 'cartao pedido', 'data-id': p.id },
+      el('div', { class: 'pedido-topo' },
+        el('div', {}, el('h3', { text: p.titulo }), el('div', { class: 'sub', text: [p.cliente, p.tipo].filter(Boolean).join(' · ') || 'Sem cliente' })),
+        el('span', { class: 'selo selo-' + p.etapa }, el('i'), CT.NOME_ETAPA[p.etapa])),
+      el('div', { class: 'barra', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(p.quantidade), 'aria-valuenow': String(p.feitos), 'aria-label': `${pct}% pronto` }, el('span', { style: `width:${pct}%` })),
+      el('div', { class: 'meta' },
+        el('span', {}, el('b', { text: `${nf.format(p.feitos)} de ${nf.format(p.quantidade)}` }), ` prontos · ${pct}%`),
+        el('span', { class: atraso ? 'atraso' : '', text: fimEtapa(p.etapa) ? `Entrega prevista: ${CT.diaHora(prev)}` : atraso ? `Atrasado ${CT.duracao(-resta)}` : `Entrega em ${CT.duracao(resta)} · ${CT.diaHora(prev)}` })),
+      el('div', { class: 'acoes' },
+        fimEtapa(p.etapa) ? null : el('button', { class: 'btn', type: 'button', text: '+1', 'aria-label': 'Mais um pronto', onclick: () => somar(p, 1) }),
+        fimEtapa(p.etapa) ? null : el('button', { class: 'btn', type: 'button', text: '+10', 'aria-label': 'Mais dez prontos', onclick: () => somar(p, 10) }),
+        el('button', { class: 'btn btn-cor', type: 'button', text: 'Atualizar', onclick: () => abrirProgresso(p) }),
+        el('button', { class: 'btn', type: 'button', text: 'Link do cliente', onclick: () => abrirLink(p) }),
+        el('button', { class: 'btn mais', type: 'button', text: 'Editar', onclick: () => abrirPedido(p) })));
+  }
+
+  async function somar(p, n) {
+    const feitos = Math.min(p.quantidade, p.feitos + n);
+    if (feitos === p.feitos) return aviso('Este pedido já está com todas as peças prontas.');
+    const campos = { feitos };
+    if (p.etapa === 'fila') campos.etapa = 'producao';
+    try {
+      const novo = await salvarPedido(p.id, campos);
+      desenhar();
+      if (novo.feitos === novo.quantidade && !fimEtapa(novo.etapa)) aviso('Todas as peças prontas!', false, { rotulo: 'Marcar como pronto', fn: () => salvarPedido(novo.id, { etapa: 'pronto' }).then(desenhar, e => aviso(erroAmigavel(e), true)) });
+      else aviso(`${novo.titulo}: ${nf.format(novo.feitos)} de ${nf.format(novo.quantidade)} prontos.`);
+    } catch (e) { aviso(erroAmigavel(e), true); }
+  }
+
+  /* ---------- etapas (rádios) ---------- */
+  function radiosEtapa(box, nome, atual) {
+    box.replaceChildren(...['fila', 'producao', 'pausado', 'acabamento', 'pronto', 'entregue', 'cancelado'].map(id =>
+      el('label', {}, el('input', { type: 'radio', name: nome, value: id, checked: id === atual }), el('span', { text: CT.NOME_ETAPA[id] }))));
+  }
+  const etapaEscolhida = nome => { const r = document.querySelector(`input[name="${nome}"]:checked`); return r ? r.value : 'fila'; };
+
+  /* ---------- criar / editar ---------- */
+  function atualizarPrevisao() {
+    const q = numero($('#pPrazo').value), u = $('#pUnidade').value;
+    const ini = $('#pInicio').value ? new Date($('#pInicio').value) : new Date();
+    const box = $('#pPrevisao');
+    if (!q || !(q > 0)) { box.textContent = 'Informe o tempo para ver a previsão de entrega.'; return; }
+    const prev = new Date(ini.getTime() + q * (u === 'dias' ? 24 : 1) * 3600000);
+    box.textContent = `Previsão de entrega para o cliente: ${CT.quando(prev)}`;
+  }
+  ['#pPrazo', '#pUnidade', '#pInicio'].forEach(s => $(s).addEventListener('input', atualizarPrevisao));
+  function abrirPedido(p) {
+    editando = p || null;
+    $('#tPedido').textContent = p ? 'Editar pedido' : 'Novo pedido';
+    $('#pTitulo').value = p ? p.titulo : '';
+    $('#pTipo').value = p ? p.tipo : '';
+    $('#pQtd').value = p ? p.quantidade : '';
+    $('#pCliente').value = p ? p.cliente : '';
+    $('#pTel').value = p ? p.telefone : '';
+    const h = p ? Number(p.prazo_horas) : 0;
+    const emDias = !p || h % 24 === 0 || h >= 48;
+    $('#pUnidade').value = emDias ? 'dias' : 'horas';
+    $('#pPrazo').value = p ? String(Math.round((emDias ? h / 24 : h) * 100) / 100) : '';
+    $('#pInicio').value = paraLocal(p ? CT.data(p.inicio) : new Date());
+    $('#pFeitos').value = p ? p.feitos : 0;
+    $('#pMsg').value = p ? p.mensagem : '';
+    $('#pValor').value = p && p.valor != null ? String(p.valor).replace('.', ',') : '';
+    $('#pPago').value = p && p.pago != null ? String(p.pago).replace('.', ',') : '';
+    $('#pNotas').value = p ? p.notas : '';
+    radiosEtapa($('#pEtapas'), 'pEtapa', p ? p.etapa : 'fila');
+    $('#btnExcluir').hidden = !p;
+    $('#pErro').textContent = '';
+    document.querySelectorAll('#dlgPedido .invalido').forEach(n => n.classList.remove('invalido'));
+    atualizarPrevisao();
+    abrir($('#dlgPedido'));
+    $('#pTitulo').focus();
+  }
+  $('#btnNovo').addEventListener('click', () => abrirPedido(null));
+  $('#btnSalvarPedido').addEventListener('click', async () => {
+    const erro = (campo, t) => { $('#pErro').textContent = t; if (campo) { $(campo).classList.add('invalido'); $(campo).focus(); } };
+    document.querySelectorAll('#dlgPedido .invalido').forEach(n => n.classList.remove('invalido'));
+    const titulo = $('#pTitulo').value.trim();
+    const qtd = Number($('#pQtd').value), feitos = Number($('#pFeitos').value || 0);
+    const prazo = numero($('#pPrazo').value);
+    const valor = numero($('#pValor').value), pago = numero($('#pPago').value);
+    const tel = digitos($('#pTel').value);
+    if (!titulo) return erro('#pTitulo', 'Dê um título ao pedido.');
+    if (!Number.isInteger(qtd) || qtd < 1) return erro('#pQtd', 'A quantidade precisa ser um número inteiro maior que zero.');
+    if (!prazo || !(prazo > 0)) return erro('#pPrazo', 'Informe quanto tempo o pedido leva para ficar pronto.');
+    if (!Number.isInteger(feitos) || feitos < 0 || feitos > qtd) return erro('#pFeitos', `"Já prontos" precisa ficar entre 0 e ${qtd}.`);
+    if (Number.isNaN(valor)) return erro('#pValor', 'Valor inválido. Use, por exemplo, 450,00.');
+    if (Number.isNaN(pago)) return erro('#pPago', 'Valor recebido inválido. Use, por exemplo, 225,00.');
+    if (tel && tel.length < 10) return erro('#pTel', 'WhatsApp incompleto: coloque DDD e número.');
+    const horas = prazo * ($('#pUnidade').value === 'dias' ? 24 : 1);
+    if (horas > 24 * 366) return erro('#pPrazo', 'O prazo máximo é de 1 ano.');
+    let etapa = etapaEscolhida('pEtapa');
+    if (etapa === 'fila' && feitos > 0) etapa = 'producao';
+    const campos = {
+      titulo, tipo: $('#pTipo').value.trim(), cliente: $('#pCliente').value.trim(), telefone: tel, quantidade: qtd, feitos, etapa,
+      inicio: new Date($('#pInicio').value || Date.now()).toISOString(), prazo_horas: Math.round(horas * 100) / 100,
+      mensagem: $('#pMsg').value.trim(), notas: $('#pNotas').value.trim(), valor, pago
+    };
+    const btn = $('#btnSalvarPedido'); btn.disabled = true;
+    try {
+      const novo = await salvarPedido(editando && editando.id, campos);
+      fechar($('#dlgPedido'));
+      desenhar();
+      if (!editando) { abrirLink(novo, true); }
+      else aviso('Pedido atualizado.');
+    } catch (e) { erro(null, erroAmigavel(e)); }
+    finally { btn.disabled = false; }
+  });
+  $('#btnExcluir').addEventListener('click', async () => {
+    if (!editando) return;
+    if (!(await confirmar(`Excluir o pedido "${editando.titulo}"? O link do cliente para de funcionar. Isso não pode ser desfeito.`, 'Excluir'))) return;
+    try {
+      await CT.pedir(`/rest/v1/ct_pedidos?id=eq.${editando.id}`, { metodo: 'DELETE', comLogin: true });
+      pedidos = pedidos.filter(p => p.id !== editando.id);
+      fechar($('#dlgPedido')); desenhar(); aviso('Pedido excluído.');
+    } catch (e) { $('#pErro').textContent = erroAmigavel(e); }
+  });
+
+  /* ---------- progresso ---------- */
+  function infoProgresso() {
+    const p = progAlvo, f = Math.max(0, Math.min(p.quantidade, Math.floor(Number($('#gFeitos').value) || 0)));
+    $('#gInfo').textContent = `de ${nf.format(p.quantidade)} · ${Math.floor(f / p.quantidade * 100)}% · faltam ${nf.format(p.quantidade - f)}`;
+  }
+  function abrirProgresso(p) {
+    progAlvo = p;
+    $('#gTitulo').textContent = `${p.titulo}: quantos já estão prontos?`;
+    $('#gFeitos').value = p.feitos; $('#gFeitos').max = p.quantidade;
+    $('#gMsg').value = p.mensagem || '';
+    $('#gErro').textContent = '';
+    radiosEtapa($('#gEtapas'), 'gEtapa', p.etapa);
+    $('#gAtalhos').replaceChildren(...[5, 10, 25, 50].filter(n => n < p.quantidade).map(n => el('button', { class: 'btn', type: 'button', text: `+${n}`, onclick: () => ajustar(n) })),
+      el('button', { class: 'btn', type: 'button', text: 'Tudo pronto', onclick: () => { $('#gFeitos').value = p.quantidade; infoProgresso(); const r = document.querySelector('input[name="gEtapa"][value="pronto"]'); if (r && !fimEtapa(etapaEscolhida('gEtapa'))) r.checked = true; } }));
+    infoProgresso();
+    abrir($('#dlgProgresso'));
+  }
+  function ajustar(n) { const v = Math.max(0, Math.min(progAlvo.quantidade, (Math.floor(Number($('#gFeitos').value) || 0)) + n)); $('#gFeitos').value = v; infoProgresso(); }
+  $('#gMais').addEventListener('click', () => ajustar(1));
+  $('#gMenos').addEventListener('click', () => ajustar(-1));
+  $('#gFeitos').addEventListener('input', infoProgresso);
+  $('#btnSalvarProg').addEventListener('click', async () => {
+    const p = progAlvo, f = Math.floor(Number($('#gFeitos').value));
+    if (!Number.isInteger(f) || f < 0 || f > p.quantidade) { $('#gErro').textContent = `Use um número entre 0 e ${p.quantidade}.`; return; }
+    let etapa = etapaEscolhida('gEtapa');
+    if (etapa === 'fila' && f > 0) etapa = 'producao';
+    const btn = $('#btnSalvarProg'); btn.disabled = true;
+    try {
+      await salvarPedido(p.id, { feitos: f, etapa, mensagem: $('#gMsg').value.trim() });
+      fechar($('#dlgProgresso')); desenhar(); aviso('Progresso salvo. O cliente já vê a atualização.');
+    } catch (e) { $('#gErro').textContent = erroAmigavel(e); }
+    finally { btn.disabled = false; }
+  });
+
+  /* ---------- link do cliente ---------- */
+  function abrirLink(p, recemCriado) {
+    const url = linkCliente(p);
+    $('#tLink').textContent = recemCriado ? 'Pedido criado!' : 'Link do cliente';
+    $('#lTexto').textContent = (recemCriado ? 'Agora mande o link para o cliente acompanhar. ' : '') + 'Só quem tem o link consegue ver o pedido.';
+    $('#lUrl').value = url;
+    $('#btnAbrir').href = url;
+    const primeiro = (p.cliente || '').split(' ')[0];
+    const texto = `Olá${primeiro ? ', ' + primeiro : ''}! Acompanhe a produção do seu pedido "${p.titulo}" por aqui: ${url}`;
+    $('#btnWhats').href = p.telefone ? CT.linkWhats(p.telefone, texto) : `https://wa.me/?text=${encodeURIComponent(texto)}`;
+    $('#btnWhats').textContent = p.telefone ? `Enviar para ${primeiro || 'o cliente'} no WhatsApp` : 'Enviar pelo WhatsApp';
+    abrir($('#dlgLink'));
+  }
+  $('#btnCopiar').addEventListener('click', async () => {
+    const v = $('#lUrl').value;
+    try { await navigator.clipboard.writeText(v); aviso('Link copiado.'); }
+    catch (_) { $('#lUrl').select(); try { document.execCommand('copy'); aviso('Link copiado.'); } catch (__) { aviso('Selecione o link e copie.', true); } }
+  });
+
+  /* ---------- configurações ---------- */
+  function abrirConfig() {
+    $('#cNome').value = config.nome_estudio || '';
+    $('#cWhats').value = config.whatsapp || '';
+    $('#cCor').value = (config.cor || '#6C5CE7').toLowerCase();
+    $('#cCorTxt').textContent = (config.cor || '#6C5CE7').toUpperCase();
+    $('#cConta').textContent = CT.sessao ? `Conectado como ${CT.sessao.email}` : '';
+    $('#cErro').textContent = '';
+    abrir($('#dlgConfig'));
+  }
+  $('#cCor').addEventListener('input', () => { $('#cCorTxt').textContent = $('#cCor').value.toUpperCase(); CT.aplicarCor($('#cCor').value); });
+  $('#dlgConfig').addEventListener('close', () => CT.aplicarCor(config.cor));
+  $('#btnSalvarCfg').addEventListener('click', async () => {
+    const nome = $('#cNome').value.trim(), w = digitos($('#cWhats').value);
+    if (!nome) { $('#cErro').textContent = 'Dê um nome ao estúdio.'; return; }
+    if (w && w.length < 10) { $('#cErro').textContent = 'WhatsApp incompleto: coloque DDD e número.'; return; }
+    try {
+      const r = await CT.pedir('/rest/v1/ct_config?id=eq.1', { metodo: 'PATCH', corpo: { nome_estudio: nome, whatsapp: w, cor: $('#cCor').value.toUpperCase(), atualizado_em: new Date().toISOString() }, cabecalhos: { prefer: 'return=representation' }, comLogin: true });
+      if (Array.isArray(r) && r[0]) config = r[0];
+      fechar($('#dlgConfig')); CT.aplicarCor(config.cor); desenhar(); aviso('Configurações salvas.');
+    } catch (e) { $('#cErro').textContent = erroAmigavel(e); }
+  });
+  $('#btnSair').addEventListener('click', async () => { await CT.sair(); fechar($('#dlgConfig')); modoLogin = 'entrar'; telaLogin('Você saiu.', 'ok'); });
+
+  /* ---------- início ---------- */
+  async function iniciar() {
+    if (!CT.configurado) { app.replaceChildren(el('p', { class: 'cartao', text: 'Falta configurar o servidor em config.js.' })); return; }
+    if (retornoEmail()) return;
+    if (!CT.sessao) return telaLogin();
+    try {
+      const admin = await CT.pedir('/rest/v1/rpc/ct_eh_admin', { metodo: 'POST', corpo: {}, comLogin: true });
+      if (admin !== true) { await CT.sair(); return telaLogin('Esta conta não é administradora do estúdio.', 'ruim'); }
+      await carregar();
+      desenhar();
+    } catch (e) {
+      if (e.status === 401 || !CT.sessao) return telaLogin('Sua sessão venceu. Entre de novo.', 'ruim');
+      app.replaceChildren(el('div', { class: 'cartao vazio' }, el('b', { text: 'Não consegui carregar os pedidos' }), erroAmigavel(e), el('p', {}, el('button', { class: 'btn', type: 'button', text: 'Tentar de novo', onclick: iniciar }))));
+    }
+  }
+  iniciar();
+  // Mantém a lista em dia se você usar o painel em dois aparelhos.
+  setInterval(() => { if (document.visibilityState === 'visible' && CT.sessao && pedidos && !document.querySelector('dialog[open]')) carregar().then(() => { if ($('#lista')) desenharLista(); }).catch(() => {}); }, 60000);
+})();
+</script>
+</body>
+</html>
