@@ -3,16 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Painel de pedidos | StudioCT 3D</title>
+<title>Painel de pedidos</title>
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#F6ECDC">
-<link rel="icon" type="image/png" href="assets/favicon.png">
-<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
-<link rel="stylesheet" href="assets/estilo.css?v=2">
+<link rel="icon" type="image/svg+xml" href="assets/icone.svg">
+<link rel="stylesheet" href="assets/estilo.css?v=3">
 <style>
   .pagina { max-width: 980px; margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom)); }
   .topo { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-  .topo img { width: 52px; height: auto; filter: drop-shadow(0 4px 8px rgb(120 80 20 / .25)); }
+  .topo img { filter: drop-shadow(0 4px 8px rgb(60 40 20 / .22)); }
   .topo .nome { flex: 1; min-width: 0; }
   .topo b { display: block; font: 700 20px var(--serifa); }
   .topo small { color: var(--suave); }
@@ -59,7 +58,7 @@
   .link-box { display: grid; gap: 10px; }
   .link-box input { font-size: 14px; }
   .login { max-width: 420px; margin: 4vh auto 0; text-align: center; }
-  .login img { width: 130px; height: auto; margin: 0 auto 6px; display: block; }
+  .login .marca { display: grid; justify-items: center; margin: 0 auto 8px; }
   .login h1 { margin: 0 0 4px; font: 700 24px var(--serifa); }
   .login p { margin: 0 0 16px; color: var(--suave); }
   .login form { display: grid; gap: 12px; text-align: left; }
@@ -68,6 +67,28 @@
   .msg { font-size: 14px; font-weight: 600; }
   .msg.ok { color: var(--ok); }
   .msg.ruim { color: var(--perigo); }
+  .mais-sugestao { text-align: center; margin-top: 18px; }
+  .menu-lista { display: grid; gap: 8px; }
+  .menu-lista .btn { justify-content: flex-start; min-height: 50px; }
+  .cores { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .cores button { width: 38px; height: 38px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 1px var(--linha); }
+  .cores button.on { box-shadow: 0 0 0 3px var(--texto); }
+  .cores input[type=color] { width: 46px; height: 40px; padding: 2px; border: 1px solid var(--linha); border-radius: 10px; background: #fff; }
+  .logo-box { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .logo-box .previa { display: grid; place-items: center; width: 92px; height: 92px; border: 1px dashed var(--linha); border-radius: 14px; background: #fff; overflow: hidden; }
+  .estudio-cartao { display: grid; gap: 10px; }
+  .estudio-cartao .numeros { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; color: var(--suave); }
+  .estudio-cartao .numeros b { color: var(--texto); }
+  .pessoas { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pessoa { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border-radius: 999px; background: var(--trilho); font-size: 13.5px; max-width: 100%; }
+  .pessoa span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pessoa button { width: 26px; height: 26px; border: 0; border-radius: 50%; background: transparent; display: grid; place-items: center; }
+  .add-pessoa { display: flex; gap: 8px; }
+  .add-pessoa input { flex: 1; min-width: 0; min-height: 42px; padding: 0 12px; border: 1px solid var(--linha); border-radius: 12px; background: #fff; font-size: 16px; }
+  .sugestao { display: grid; gap: 4px; }
+  .sugestao p { margin: 0; white-space: pre-wrap; }
+  .sugestao small { color: var(--suave); }
+  .secao-titulo { margin: 22px 0 10px; font: 700 18px var(--serifa); }
   .aviso button { margin-left: 10px; border: 0; border-radius: 8px; padding: 5px 10px; background: rgb(255 255 255 / .2); color: #fff; font-weight: 700; }
   @media (max-width: 720px) {
     .resumo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -82,7 +103,8 @@
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-busca" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-mais" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
-  <symbol id="i-conta" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-icone" viewBox="0 0 64 64"><rect x="4" y="4" width="56" height="56" rx="14" fill="var(--ouro)"/><path d="M20 33l8 8 16-17" fill="none" stroke="var(--texto-btn)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 
 <main class="pagina" id="app">
@@ -102,11 +124,7 @@
       <div class="campo"><label for="pTel">WhatsApp do cliente</label><input id="pTel" type="tel" inputmode="tel" placeholder="(11) 99999-0000"><small>Para mandar o link para ele.</small></div>
       <div class="campo"><label for="pAtend">Seu WhatsApp (atendimento)</label><input id="pAtend" type="tel" inputmode="tel" placeholder="(11) 98888-7777"><small>O cliente fala com este número pelo botão da página.</small></div>
       <div class="campo"><label for="pEnvio">Envio *</label>
-        <select id="pEnvio">
-          <option value="entrega">Entrega feita por mim (2 a 5 dias corridos)</option>
-          <option value="correios">Correios (postagem em 2 a 3 dias úteis)</option>
-          <option value="retirada">Retirada no local</option>
-        </select>
+        <select id="pEnvio"><option value="entrega"></option><option value="correios"></option><option value="retirada"></option></select>
       </div>
       <div class="campo inteiro">
         <span class="rotulo">Tempo para ficar pronto *</span>
@@ -175,14 +193,70 @@
   </div>
 </dialog>
 
-<!-- Conta -->
-<dialog id="dlgConta" aria-labelledby="tConta">
-  <div class="dlg-topo"><h2 id="tConta">Conta</h2><button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
+<!-- Menu -->
+<dialog id="dlgMenu" aria-labelledby="tMenu">
+  <div class="dlg-topo"><h2 id="tMenu">Menu</h2><button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
   <div class="dlg-corpo">
-    <p style="margin:0" id="cConta"></p>
-    <p style="margin:0;color:var(--suave);font-size:14px">Todos que entram com esta conta veem e atualizam os mesmos pedidos.</p>
+    <p style="margin:0;color:var(--suave);font-size:14px" id="mConta"></p>
+    <div class="menu-lista">
+      <button class="btn" type="button" id="mConfig">⚙️ Configurações do estúdio</button>
+      <button class="btn" type="button" id="mSugestao">💬 Dar sugestão</button>
+      <button class="btn" type="button" id="mPlataforma" hidden>🏢 Estúdios (painel do dono)</button>
+      <button class="btn" type="button" id="mPedidos" hidden>📦 Voltar para os meus pedidos</button>
+      <button class="btn btn-perigo" type="button" id="btnSair">Sair desta conta</button>
+    </div>
   </div>
-  <div class="dlg-pe"><button class="btn" type="button" data-fechar>Fechar</button><button class="btn btn-perigo" type="button" id="btnSair">Sair desta conta</button></div>
+</dialog>
+
+<!-- Configurações do estúdio -->
+<dialog id="dlgConfig" aria-labelledby="tConfig">
+  <div class="dlg-topo"><h2 id="tConfig">Configurações do estúdio</h2><button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
+  <div class="dlg-corpo">
+    <div class="campo"><label for="cNome">Nome do estúdio *</label><input id="cNome" maxlength="80"><small>Aparece para os seus clientes.</small></div>
+    <div class="campo"><span class="rotulo">Logo</span>
+      <div class="logo-box"><div class="previa" id="cLogoPrevia"></div>
+        <div style="display:grid;gap:8px"><label class="btn" for="cLogo" style="cursor:pointer">Escolher imagem</label><input id="cLogo" type="file" accept="image/*" class="sr"><button class="btn" type="button" id="cLogoTirar">Tirar logo</button></div>
+      </div><small>PNG com fundo transparente fica melhor. Sem logo, aparece a inicial do nome.</small></div>
+    <div class="campo"><span class="rotulo">Cor da marca</span><div class="cores" id="cCores"></div></div>
+    <div class="campo"><label for="cWhats">WhatsApp de atendimento</label><input id="cWhats" type="tel" inputmode="tel" placeholder="(11) 98888-7777"><small>Número que o cliente chama pelo botão da página. Dá para trocar em cada pedido.</small></div>
+    <div class="campo"><label for="cEntrega">Prazo da sua entrega própria</label><input id="cEntrega" maxlength="80" placeholder="de 2 a 5 dias corridos"><small>O cliente lê: "Entrega: <b>de 2 a 5 dias corridos</b> após o término da produção".</small></div>
+    <div class="campo"><label for="cCorreios">Prazo de postagem nos Correios</label><input id="cCorreios" maxlength="80" placeholder="2 a 3 dias úteis"><small>O cliente lê: "postagem em <b>2 a 3 dias úteis</b> após o término da produção".</small></div>
+    <p class="erro" id="cErro"></p>
+  </div>
+  <div class="dlg-pe"><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-cor" type="button" id="btnSalvarConfig">Salvar</button></div>
+</dialog>
+
+<!-- Sugestão -->
+<dialog id="dlgSugestao" aria-labelledby="tSug">
+  <div class="dlg-topo"><h2 id="tSug">Dar sugestão</h2><button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
+  <div class="dlg-corpo">
+    <p style="margin:0">O que está faltando, atrapalhando ou poderia ser melhor? Toda sugestão é lida.</p>
+    <div class="campo"><label for="sTexto">Sua sugestão</label><textarea id="sTexto" maxlength="2000" style="min-height:130px"></textarea></div>
+    <p class="erro" id="sErro"></p>
+  </div>
+  <div class="dlg-pe"><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-cor" type="button" id="btnEnviarSug">Enviar</button></div>
+</dialog>
+
+<!-- Novo estúdio (dono da plataforma) -->
+<dialog id="dlgNovoEstudio" aria-labelledby="tNovoEst">
+  <div class="dlg-topo"><h2 id="tNovoEst">Novo estúdio</h2><button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
+  <div class="dlg-corpo">
+    <div class="campo"><label for="nNome">Nome do estúdio *</label><input id="nNome" maxlength="80" placeholder="Ex.: Impressões da Ana"></div>
+    <div class="campo"><label for="nEmail">E-mail de quem vai usar *</label><input id="nEmail" type="email" placeholder="ana@gmail.com"><small>A pessoa cria a conta no painel com este e-mail e já entra no estúdio.</small></div>
+    <p class="erro" id="nErro"></p>
+  </div>
+  <div class="dlg-pe"><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-cor" type="button" id="btnCriarEstudio">Criar estúdio</button></div>
+</dialog>
+
+<!-- Convite -->
+<dialog id="dlgConvite" aria-labelledby="tConvite">
+  <div class="dlg-topo"><h2 id="tConvite">Convite</h2><button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
+  <div class="dlg-corpo link-box">
+    <p style="margin:0">Mande esta mensagem para a pessoa:</p>
+    <div class="campo"><textarea id="vTexto" readonly style="min-height:170px;font-size:14px"></textarea></div>
+    <button class="btn" type="button" id="btnCopiarConvite">Copiar mensagem</button>
+    <a class="btn btn-cor" id="btnWhatsConvite" target="_blank" rel="noopener noreferrer">Enviar pelo WhatsApp</a>
+  </div>
 </dialog>
 
 <!-- Confirmação -->
@@ -194,8 +268,8 @@
 
 <div class="aviso" id="aviso" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=2"></script>
-<script src="assets/comum.js?v=2"></script>
+<script src="config.js?v=3"></script>
+<script src="assets/comum.js?v=3"></script>
 <script>
 (() => {
   'use strict';
@@ -203,7 +277,11 @@
   const $ = s => document.querySelector(s);
   const app = $('#app');
   const ATEND_KEY = 'studioct.whatsapp.atendimento';
+  const MARCA_KEY = 'studioct.ultimoEstudio';
   let pedidos = [];
+  let conta = null; // { email, dono_plataforma, estudio }
+  let tela = 'pedidos';
+  const estudio = () => (conta && conta.estudio) || { nome: '' };
   const vista = { filtro: 'andamento', busca: '' };
   let editando = null, progAlvo = null, modoLogin = 'entrar', tokenRecuperacao = '';
 
@@ -237,14 +315,19 @@
   const fimEtapa = e => ['pronto', 'entregue', 'cancelado'].includes(e);
   const atrasado = p => !fimEtapa(p.etapa) && terminoDe(p).getTime() < Date.now();
   const paraLocal = d => { const x = new Date(d.getTime() - d.getTimezoneOffset() * 60000); return x.toISOString().slice(0, 16); };
-  const envioDe = p => CT.ENVIO[p.envio] || CT.ENVIO.entrega;
+  const envioDe = p => { const t = CT.envios(estudio()); return t[p.envio] || t.entrega; };
   const porChapa = p => p.por_chapa || (p.chapas ? Math.ceil(p.quantidade / p.chapas) : null);
   function erroAmigavel(e) {
     if (e.status === 0) return 'Sem conexão com o servidor. Verifique a internet.';
     if (e.status === 401) return 'Sua sessão venceu. Entre de novo.';
-    if (/row-level security|permission/i.test(e.message)) return 'Esta conta não tem permissão de administrador.';
+    if (/row-level security|permission|Sem permiss/i.test(e.message)) return 'Esta conta não tem acesso a isso.';
+    if (/já está/.test(e.message)) return e.message + '.';
     if (/ct_feitos_validos/.test(e.message)) return 'A quantidade pronta não pode passar do total do pedido.';
     return e.message || 'Algo deu errado. Tente de novo.';
+  }
+  function svgIcone(t) {
+    const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('width', t); s.setAttribute('height', t); s.setAttribute('aria-hidden', 'true');
+    const u = document.createElementNS('http://www.w3.org/2000/svg', 'use'); u.setAttribute('href', '#i-icone'); s.append(u); return s;
   }
   function svg(id) {
     const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('class', 'ic');
@@ -308,10 +391,13 @@
         m.textContent = `Se ${em} tiver conta, chegará um link para criar uma senha nova.`; m.className = 'msg ok';
       } catch (err) { m.textContent = erroAmigavel(err); m.className = 'msg ruim'; }
     }
+    let marca = null;
+    try { marca = JSON.parse(localStorage.getItem(MARCA_KEY) || 'null'); } catch (_) {}
+    CT.aplicarCor(marca && marca.cor);
     app.replaceChildren(el('section', { class: 'cartao login' },
-      el('img', { src: 'assets/logo.webp', alt: CT.NOME_ESTUDIO, width: '130', height: '153' }),
-      el('h1', { text: nova ? 'Nova senha' : 'Painel de pedidos' }),
-      el('p', { text: nova ? 'Crie uma senha nova para a conta.' : 'Entre com a conta do estúdio.' }), form));
+      el('div', { class: 'marca' }, marca ? CT.logoEstudio(marca, 110) : svgIcone(76)),
+      el('h1', { text: nova ? 'Nova senha' : marca ? marca.nome : 'Painel de pedidos' }),
+      el('p', { text: nova ? 'Crie uma senha nova para a conta.' : criar ? 'Use o e-mail que você passou para liberar o seu acesso.' : 'Entre com a conta do seu estúdio.' }), form));
     (nova ? senha : email).focus();
   }
   function retornoEmail() {
@@ -347,6 +433,7 @@
     { id: 'entregues', nome: 'Entregues', teste: p => p.etapa === 'entregue' || p.etapa === 'cancelado' }
   ];
   function desenhar() {
+    if (tela === 'plataforma') return desenharPlataforma();
     $('#btnNovo').hidden = false;
     const resumo = el('div', { class: 'resumo', role: 'group', 'aria-label': 'Filtrar pedidos' },
       FILTROS.map(x => el('button', { type: 'button', class: (x.id === vista.filtro ? 'on ' : '') + (x.id === 'atrasados' && pedidos.some(atrasado) ? 'atraso' : ''), 'aria-pressed': String(x.id === vista.filtro), onclick: () => { vista.filtro = x.id; desenhar(); } },
@@ -354,12 +441,15 @@
     const busca = el('label', { class: 'busca' }, el('span', { class: 'sr', text: 'Buscar' }), svg('i-busca'),
       el('input', { type: 'search', placeholder: 'Buscar por título, cliente ou tipo', value: vista.busca, oninput: e => { vista.busca = e.target.value; desenharLista(); } }));
     app.replaceChildren(
-      el('header', { class: 'topo' },
-        el('img', { src: 'assets/logo.webp', alt: '', width: '52', height: '61' }),
-        el('div', { class: 'nome' }, el('b', { text: CT.NOME_ESTUDIO }), el('small', { text: 'Painel de pedidos' })),
-        el('button', { class: 'icone-btn', type: 'button', 'aria-label': 'Conta', title: 'Conta', onclick: abrirConta }, svg('i-conta'))),
-      resumo, busca, el('div', { class: 'lista', id: 'lista' }));
+      cabecalho(CT.logoEstudio(estudio(), 48), estudio().nome, 'Painel de pedidos'),
+      resumo, busca, el('div', { class: 'lista', id: 'lista' }),
+      el('p', { class: 'mais-sugestao' }, el('button', { class: 'link-txt', type: 'button', text: '💬 Sentiu falta de algo? Dar sugestão', onclick: abrirSugestao })));
     desenharLista();
+  }
+  function cabecalho(marca, titulo, sub) {
+    return el('header', { class: 'topo' }, marca,
+      el('div', { class: 'nome' }, el('b', { text: titulo }), el('small', { text: sub })),
+      el('button', { class: 'icone-btn', type: 'button', 'aria-label': 'Menu', title: 'Menu', onclick: abrirMenu }, svg('i-menu')));
   }
   function desenharLista() {
     const f = FILTROS.find(x => x.id === vista.filtro) || FILTROS[0];
@@ -469,7 +559,9 @@
     $('#pQtd').value = p ? p.quantidade : '';
     $('#pCliente').value = p ? p.cliente : '';
     $('#pTel').value = p ? p.telefone : '';
-    $('#pAtend').value = p ? (p.whatsapp_atendimento || '') : ls.get(ATEND_KEY);
+    $('#pAtend').value = p ? (p.whatsapp_atendimento || '') : (estudio().whatsapp || ls.get(ATEND_KEY));
+    const tipos = CT.envios(estudio());
+    [...$('#pEnvio').options].forEach(o => { o.textContent = tipos[o.value].curto; });
     $('#pEnvio').value = p ? (p.envio || 'entrega') : 'entrega';
     const h = p ? Number(p.prazo_horas) : 0;
     const emDias = p && h % 24 === 0 && h >= 48;
@@ -586,7 +678,7 @@
     $('#lUrl').value = url;
     $('#btnAbrir').href = url;
     const primeiro = (p.cliente || '').split(' ')[0];
-    const texto = `Olá${primeiro ? ', ' + primeiro : ''}! Aqui é da ${CT.NOME_ESTUDIO}. Acompanhe a produção do seu pedido "${p.titulo}" por este link: ${url}`;
+    const texto = `Olá${primeiro ? ', ' + primeiro : ''}! Aqui é da ${estudio().nome}. Acompanhe a produção do seu pedido "${p.titulo}" por este link: ${url}`;
     $('#btnWhats').href = p.telefone ? CT.linkWhats(p.telefone, texto) : `https://wa.me/?text=${encodeURIComponent(texto)}`;
     $('#btnWhats').textContent = p.telefone ? `Enviar para ${primeiro || 'o cliente'} no WhatsApp` : 'Enviar pelo WhatsApp';
     abrir($('#dlgLink'));
@@ -597,20 +689,208 @@
     catch (_) { $('#lUrl').select(); try { document.execCommand('copy'); aviso('Link copiado.'); } catch (__) { aviso('Selecione o link e copie.', true); } }
   });
 
-  /* ---------- conta ---------- */
-  function abrirConta() { $('#cConta').textContent = CT.sessao ? `Conectado como ${CT.sessao.email}` : ''; abrir($('#dlgConta')); }
-  $('#btnSair').addEventListener('click', async () => { await CT.sair(); fechar($('#dlgConta')); modoLogin = 'entrar'; telaLogin('Você saiu.', 'ok'); });
+  /* ---------- menu ---------- */
+  function abrirMenu() {
+    $('#mConta').textContent = CT.sessao ? `Conectado como ${CT.sessao.email}` : '';
+    const temEstudio = Boolean(conta && conta.estudio && conta.estudio.ativo);
+    $('#mConfig').hidden = !temEstudio || tela !== 'pedidos';
+    $('#mSugestao').hidden = !temEstudio;
+    $('#mPlataforma').hidden = !(conta && conta.dono_plataforma) || tela === 'plataforma';
+    $('#mPedidos').hidden = !temEstudio || tela === 'pedidos';
+    abrir($('#dlgMenu'));
+  }
+  $('#mConfig').addEventListener('click', () => { fechar($('#dlgMenu')); abrirConfig(); });
+  $('#mSugestao').addEventListener('click', () => { fechar($('#dlgMenu')); abrirSugestao(); });
+  $('#mPlataforma').addEventListener('click', () => { fechar($('#dlgMenu')); irPlataforma(); });
+  $('#mPedidos').addEventListener('click', () => { fechar($('#dlgMenu')); tela = 'pedidos'; CT.aplicarCor(estudio().cor); carregar().then(desenhar, e => aviso(erroAmigavel(e), true)); });
+  $('#btnSair').addEventListener('click', async () => { await CT.sair(); fechar($('#dlgMenu')); conta = null; tela = 'pedidos'; modoLogin = 'entrar'; telaLogin('Você saiu.', 'ok'); });
+
+  /* ---------- configurações do estúdio ---------- */
+  const CORES = [['#B8862B', 'Dourado'], ['#2F6FB0', 'Azul'], ['#1F8A70', 'Verde'], ['#D9622B', 'Laranja'], ['#B42357', 'Vinho'], ['#6D3FC4', 'Roxo'], ['#3F4652', 'Grafite']];
+  let cfg = null;
+  function desenharCores() {
+    $('#cCores').replaceChildren(
+      ...CORES.map(([c, n]) => el('button', { type: 'button', class: c === cfg.cor ? 'on' : '', style: `background:${c}`, 'aria-label': n, title: n, onclick: () => escolherCor(c) })),
+      el('input', { type: 'color', 'aria-label': 'Outra cor', title: 'Outra cor', value: cfg.cor.toLowerCase(), oninput: e => escolherCor(e.target.value.toUpperCase()) }));
+  }
+  function escolherCor(c) { cfg.cor = c; CT.aplicarCor(c); desenharCores(); }
+  function desenharPreviaLogo() { $('#cLogoPrevia').replaceChildren(CT.logoEstudio({ nome: $('#cNome').value || estudio().nome, logo: cfg.logo }, 72)); $('#cLogoTirar').hidden = !cfg.logo; }
+  function abrirConfig() {
+    const e = estudio();
+    cfg = { cor: (e.cor || CT.COR_PADRAO).toUpperCase(), logo: e.logo || '' };
+    $('#cNome').value = e.nome || ''; $('#cWhats').value = e.whatsapp || '';
+    $('#cEntrega').value = e.prazo_entrega || ''; $('#cCorreios').value = e.prazo_correios || '';
+    $('#cErro').textContent = ''; $('#cLogo').value = '';
+    desenharCores(); desenharPreviaLogo();
+    abrir($('#dlgConfig'));
+  }
+  $('#dlgConfig').addEventListener('close', () => CT.aplicarCor(estudio().cor));
+  $('#cNome').addEventListener('input', desenharPreviaLogo);
+  $('#cLogoTirar').addEventListener('click', () => { cfg.logo = ''; desenharPreviaLogo(); });
+  // A logo é reduzida no próprio celular antes de salvar (até 320 px), para a página do cliente abrir rápido.
+  function reduzirImagem(arquivo, lado = 320) {
+    return new Promise((ok, falha) => {
+      if (!/^image\//.test(arquivo.type)) return falha(new Error('Escolha um arquivo de imagem (PNG ou JPG).'));
+      const url = URL.createObjectURL(arquivo), img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const k = Math.min(1, lado / Math.max(img.naturalWidth || lado, img.naturalHeight || lado));
+        const c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round((img.naturalWidth || lado) * k)); c.height = Math.max(1, Math.round((img.naturalHeight || lado) * k));
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        let d = c.toDataURL('image/webp', .9);
+        if (!d.startsWith('data:image/webp')) d = c.toDataURL('image/png');
+        if (d.length > 280000) d = c.toDataURL('image/jpeg', .85);
+        d.length > 290000 ? falha(new Error('Essa imagem ficou grande demais. Tente outra.')) : ok(d);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); falha(new Error('Não consegui abrir essa imagem. Tente PNG ou JPG.')); };
+      img.src = url;
+    });
+  }
+  $('#cLogo').addEventListener('change', async e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    try { cfg.logo = await reduzirImagem(f); $('#cErro').textContent = ''; desenharPreviaLogo(); }
+    catch (err) { $('#cErro').textContent = err.message; }
+  });
+  $('#btnSalvarConfig').addEventListener('click', async () => {
+    const nome = $('#cNome').value.trim(), w = digitos($('#cWhats').value);
+    const ent = $('#cEntrega').value.trim() || 'de 2 a 5 dias corridos', cor_ = $('#cCorreios').value.trim() || '2 a 3 dias úteis';
+    if (!nome) { $('#cErro').textContent = 'Dê um nome ao estúdio.'; return $('#cNome').focus(); }
+    if (w && w.length < 10) { $('#cErro').textContent = 'WhatsApp incompleto: coloque DDD e número.'; return $('#cWhats').focus(); }
+    const btn = $('#btnSalvarConfig'); btn.disabled = true;
+    try {
+      const e = await CT.pedir('/rest/v1/rpc/ct_salvar_estudio', { metodo: 'POST', comLogin: true, corpo: {
+        p_nome: nome, p_whatsapp: w, p_cor: cfg.cor, p_logo: cfg.logo === (estudio().logo || '') ? null : cfg.logo, p_prazo_entrega: ent, p_prazo_correios: cor_ } });
+      conta.estudio = e; lembrarMarca();
+      fechar($('#dlgConfig')); desenhar(); aviso('Configurações salvas. Os clientes já veem as novidades.');
+    } catch (err) { $('#cErro').textContent = erroAmigavel(err); }
+    finally { btn.disabled = false; }
+  });
+  function lembrarMarca() {
+    const e = estudio();
+    try { localStorage.setItem(MARCA_KEY, JSON.stringify({ nome: e.nome, logo: e.logo, cor: e.cor })); } catch (_) {}
+    CT.aplicarCor(e.cor); CT.iconeAba(e);
+    document.title = `Painel de pedidos | ${e.nome}`;
+  }
+
+  /* ---------- sugestão ---------- */
+  function abrirSugestao() { $('#sTexto').value = ''; $('#sErro').textContent = ''; abrir($('#dlgSugestao')); $('#sTexto').focus(); }
+  $('#btnEnviarSug').addEventListener('click', async () => {
+    const t = $('#sTexto').value.trim();
+    if (!t) { $('#sErro').textContent = 'Escreva sua sugestão.'; return; }
+    const btn = $('#btnEnviarSug'); btn.disabled = true;
+    try { await CT.pedir('/rest/v1/rpc/ct_enviar_sugestao', { metodo: 'POST', comLogin: true, corpo: { p_texto: t } }); fechar($('#dlgSugestao')); aviso('Sugestão enviada. Obrigado!'); }
+    catch (err) { $('#sErro').textContent = erroAmigavel(err); }
+    finally { btn.disabled = false; }
+  });
+
+  /* ---------- painel do dono da plataforma ---------- */
+  let estudios = [], sugestoes = [];
+  async function irPlataforma() {
+    tela = 'plataforma'; $('#btnNovo').hidden = true; CT.aplicarCor(null);
+    app.replaceChildren(el('p', { style: 'text-align:center;padding:60px 0;color:var(--suave)', text: 'Carregando estúdios…' }));
+    try { await carregarPlataforma(); desenharPlataforma(); }
+    catch (e) { app.replaceChildren(el('div', { class: 'cartao vazio' }, el('b', { text: 'Não consegui carregar os estúdios' }), erroAmigavel(e))); }
+  }
+  async function carregarPlataforma() {
+    const rpc = n => CT.pedir('/rest/v1/rpc/' + n, { metodo: 'POST', comLogin: true, corpo: {} });
+    [estudios, sugestoes] = await Promise.all([rpc('ct_plat_estudios'), rpc('ct_plat_sugestoes')]);
+    estudios = estudios || []; sugestoes = sugestoes || [];
+  }
+  async function acaoPlataforma(rpc, corpo, ok) {
+    try { await CT.pedir('/rest/v1/rpc/' + rpc, { metodo: 'POST', comLogin: true, corpo }); await carregarPlataforma(); desenharPlataforma(); if (ok) aviso(ok); return true; }
+    catch (e) { aviso(erroAmigavel(e), true); return false; }
+  }
+  function desenharPlataforma() {
+    $('#btnNovo').hidden = true;
+    const ativos = estudios.filter(e => e.ativo);
+    const mes = estudios.reduce((t, e) => t + Number(e.pedidos_30d || 0), 0);
+    app.replaceChildren(
+      cabecalho(svgIcone(48), 'Estúdios', 'Painel do dono'),
+      el('div', { class: 'resumo' },
+        el('button', { type: 'button', tabindex: '-1' }, el('b', { text: String(ativos.length) }), el('span', { text: 'Estúdios ativos' })),
+        el('button', { type: 'button', tabindex: '-1' }, el('b', { text: nf.format(mes) }), el('span', { text: 'Pedidos em 30 dias' })),
+        el('button', { type: 'button', tabindex: '-1' }, el('b', { text: String(sugestoes.length) }), el('span', { text: 'Sugestões' })),
+        el('button', { type: 'button', onclick: abrirNovoEstudio }, el('b', { text: '+' }), el('span', { text: 'Novo estúdio' }))),
+      el('div', { class: 'lista' }, estudios.map(cartaoEstudio)),
+      el('h2', { class: 'secao-titulo', text: 'Sugestões recebidas' }),
+      el('div', { class: 'lista' }, sugestoes.length ? sugestoes.map(x => el('article', { class: 'cartao sugestao' },
+        el('p', { text: x.texto }), el('small', { text: [x.estudio || 'Sem estúdio', x.email, CT.relativo(x.criado_em)].filter(Boolean).join(' · ') })))
+        : el('div', { class: 'cartao vazio', text: 'Nenhuma sugestão ainda.' })));
+  }
+  function cartaoEstudio(e) {
+    const input = el('input', { type: 'email', placeholder: 'e-mail de mais uma pessoa', 'aria-label': `Adicionar pessoa ao ${e.nome}` });
+    const adicionar = async () => {
+      const em = input.value.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return aviso('Digite um e-mail válido.', true);
+      if (await acaoPlataforma('ct_plat_add_pessoa', { p_estudio: e.id, p_email: em }, 'Pessoa adicionada.')) abrirConvite(e.nome, em);
+    };
+    return el('article', { class: 'cartao estudio-cartao' },
+      el('div', { class: 'pedido-topo' },
+        el('div', {}, el('h3', { style: 'margin:0;font:700 18px var(--serifa)', text: e.nome }),
+          el('div', { class: 'sub', style: 'color:var(--suave);font-size:13.5px', text: `Desde ${CT.data(e.criado_em).toLocaleDateString('pt-BR')}` + (e.tem_logo ? '' : ' · ainda sem logo') })),
+        el('span', { class: 'selo ' + (e.ativo ? 'selo-pronto' : 'selo-cancelado') }, el('i'), e.ativo ? 'Ativo' : 'Pausado')),
+      el('div', { class: 'numeros' },
+        el('span', {}, el('b', { text: nf.format(e.pedidos) }), ' pedidos'),
+        el('span', {}, el('b', { text: nf.format(e.pedidos_30d) }), ' nos últimos 30 dias'),
+        el('span', {}, el('b', { text: nf.format(e.em_andamento) }), ' em andamento'),
+        el('span', { text: e.ultimo_pedido ? `Último pedido ${CT.relativo(e.ultimo_pedido)}` : 'Nenhum pedido ainda' }),
+        e.ultima_atualizacao ? el('span', { text: `Última atualização ${CT.relativo(e.ultima_atualizacao)}` }) : null),
+      el('div', { class: 'pessoas' }, (e.pessoas || []).map(em => el('span', { class: 'pessoa' }, el('span', { text: em }),
+        el('button', { type: 'button', 'aria-label': `Convite para ${em}`, title: 'Convite', text: '✉️', onclick: () => abrirConvite(e.nome, em) }),
+        el('button', { type: 'button', 'aria-label': `Tirar ${em}`, title: 'Tirar acesso', onclick: async () => {
+          if (await confirmar(`Tirar o acesso de ${em} ao ${e.nome}?`, 'Tirar acesso')) acaoPlataforma('ct_plat_del_pessoa', { p_email: em }, 'Acesso removido.');
+        } }, svg('i-x'))))),
+      el('div', { class: 'add-pessoa' }, input, el('button', { class: 'btn', type: 'button', text: 'Adicionar', onclick: adicionar })),
+      el('div', { class: 'acoes' },
+        el('button', { class: 'btn', type: 'button', text: e.ativo ? 'Pausar acesso' : 'Reativar acesso', onclick: async () => {
+          if (e.ativo && !(await confirmar(`Pausar o ${e.nome}? O painel deles fica bloqueado (nada é apagado) e os links dos clientes continuam abrindo.`, 'Pausar'))) return;
+          acaoPlataforma('ct_plat_editar_estudio', { p_id: e.id, p_nome: null, p_ativo: !e.ativo }, e.ativo ? 'Estúdio pausado.' : 'Estúdio reativado.');
+        } })));
+  }
+  function abrirNovoEstudio() { $('#nNome').value = ''; $('#nEmail').value = ''; $('#nErro').textContent = ''; abrir($('#dlgNovoEstudio')); $('#nNome').focus(); }
+  $('#btnCriarEstudio').addEventListener('click', async () => {
+    const nome = $('#nNome').value.trim(), em = $('#nEmail').value.trim().toLowerCase();
+    if (!nome) { $('#nErro').textContent = 'Dê um nome ao estúdio.'; return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { $('#nErro').textContent = 'Digite um e-mail válido.'; return; }
+    const btn = $('#btnCriarEstudio'); btn.disabled = true;
+    try {
+      await CT.pedir('/rest/v1/rpc/ct_plat_criar_estudio', { metodo: 'POST', comLogin: true, corpo: { p_nome: nome, p_email: em } });
+      fechar($('#dlgNovoEstudio')); await carregarPlataforma(); desenharPlataforma(); abrirConvite(nome, em);
+    } catch (e) { $('#nErro').textContent = erroAmigavel(e); }
+    finally { btn.disabled = false; }
+  });
+  function abrirConvite(nome, email) {
+    const url = new URL('./administrador/', location.href).href;
+    const t = `Olá! O seu painel de pedidos do ${nome} está pronto.\n\n1. Abra: ${url}\n2. Toque em "Criar conta" e use o e-mail ${email}\n3. Confirme pelo link que chega no seu e-mail e entre.\n\nDepois, no Menu › Configurações, coloque sua logo, sua cor e seu WhatsApp. Qualquer coisa, me chama!`;
+    $('#vTexto').value = t;
+    $('#btnWhatsConvite').href = `https://wa.me/?text=${encodeURIComponent(t)}`;
+    abrir($('#dlgConvite'));
+  }
+  $('#btnCopiarConvite').addEventListener('click', async () => {
+    const v = $('#vTexto').value;
+    try { await navigator.clipboard.writeText(v); aviso('Mensagem copiada.'); }
+    catch (_) { $('#vTexto').select(); try { document.execCommand('copy'); aviso('Mensagem copiada.'); } catch (__) { aviso('Selecione o texto e copie.', true); } }
+  });
 
   /* ---------- início ---------- */
+  function semEstudio(titulo, texto) {
+    $('#btnNovo').hidden = true;
+    app.replaceChildren(el('section', { class: 'cartao login' },
+      el('div', { class: 'marca' }, svgIcone(76)), el('h1', { text: titulo }), el('p', { text: texto }),
+      el('button', { class: 'btn', type: 'button', text: 'Sair desta conta', onclick: async () => { await CT.sair(); conta = null; telaLogin(); } })));
+  }
   async function iniciar() {
     if (!CT.configurado) { app.replaceChildren(el('p', { class: 'cartao', text: 'Falta configurar o servidor em config.js.' })); return; }
     if (retornoEmail()) return;
     if (!CT.sessao) return telaLogin();
     try {
-      const admin = await CT.pedir('/rest/v1/rpc/ct_eh_admin', { metodo: 'POST', corpo: {}, comLogin: true });
-      if (admin !== true) { await CT.sair(); return telaLogin('Esta conta não tem acesso ao painel.', 'ruim'); }
-      await carregar();
-      desenhar();
+      conta = await CT.pedir('/rest/v1/rpc/ct_minha_conta', { metodo: 'POST', corpo: {}, comLogin: true });
+      const e = conta && conta.estudio;
+      if (e && e.ativo) { lembrarMarca(); tela = 'pedidos'; await carregar(); return desenhar(); }
+      if (conta && conta.dono_plataforma) return irPlataforma();
+      if (e) return semEstudio('Acesso pausado', `O painel do ${e.nome} está pausado no momento. Seus pedidos estão guardados e os links dos clientes continuam funcionando. Fale com a gente para reativar.`);
+      return semEstudio('Conta sem estúdio', `A conta ${CT.sessao.email} ainda não está ligada a nenhum estúdio. Peça para quem te convidou liberar o acesso com este e-mail.`);
     } catch (e) {
       if (e.status === 401 || !CT.sessao) return telaLogin('Sua sessão venceu. Entre de novo.', 'ruim');
       app.replaceChildren(el('div', { class: 'cartao vazio' }, el('b', { text: 'Não consegui carregar os pedidos' }), erroAmigavel(e), el('p', {}, el('button', { class: 'btn', type: 'button', text: 'Tentar de novo', onclick: iniciar }))));
@@ -618,7 +898,7 @@
   }
   iniciar();
   // Mantém a lista em dia quando mais de uma pessoa usa a mesma conta.
-  setInterval(() => { if (document.visibilityState === 'visible' && CT.sessao && !document.querySelector('dialog[open]') && $('#lista')) carregar().then(desenharLista).catch(() => {}); }, 30000);
+  setInterval(() => { if (tela === 'pedidos' && document.visibilityState === 'visible' && CT.sessao && !document.querySelector('dialog[open]') && $('#lista')) carregar().then(desenharLista).catch(() => {}); }, 30000);
 })();
 </script>
 </body>

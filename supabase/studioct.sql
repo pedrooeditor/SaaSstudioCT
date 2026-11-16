@@ -175,6 +175,258 @@ revoke all on function public.ct_pedido_publico(text) from public;
 grant execute on function public.ct_pedido_publico(text) to anon, authenticated;
 
 -- =====================================================================
+-- Versão 3: vários estúdios no mesmo sistema.
+-- Cada estúdio tem nome, logo, cor, WhatsApp e prazos próprios, e só vê os próprios pedidos.
+-- Quem está em ct_admins é dono da plataforma: cadastra estúdios e vê como cada um usa.
+-- =====================================================================
+create table if not exists public.ct_estudios (
+  id uuid primary key default gen_random_uuid(),
+  nome text not null check (char_length(btrim(nome)) between 1 and 80),
+  whatsapp text not null default '' check (whatsapp ~ '^[0-9]{0,15}$'),
+  cor text not null default '#B8862B' check (cor ~ '^#[0-9A-Fa-f]{6}$'),
+  logo text not null default '' check (char_length(logo) <= 300000 and (logo = ''
+    or logo ~ '^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$' or logo ~ '^assets/[a-z0-9._-]+$')),
+  prazo_entrega text not null default 'de 2 a 5 dias corridos' check (char_length(btrim(prazo_entrega)) between 1 and 80),
+  prazo_correios text not null default '2 a 3 dias úteis' check (char_length(btrim(prazo_correios)) between 1 and 80),
+  ativo boolean not null default true,
+  criado_em timestamptz not null default now()
+);
+-- Quem entra no painel de cada estúdio (pelo e-mail da conta).
+create table if not exists public.ct_membros (
+  email text primary key check (email = lower(email) and email ~ '^[^\s@]+@[^\s@]+\.[^\s@]+$'),
+  estudio_id uuid not null references public.ct_estudios (id) on delete cascade,
+  criado_em timestamptz not null default now()
+);
+create index if not exists ct_membros_estudio on public.ct_membros (estudio_id);
+-- Sugestões enviadas pelo botão "Dar sugestão" do painel.
+create table if not exists public.ct_sugestoes (
+  id bigint generated always as identity primary key,
+  estudio_id uuid references public.ct_estudios (id) on delete cascade,
+  email text not null default '',
+  texto text not null check (char_length(btrim(texto)) between 1 and 2000),
+  criado_em timestamptz not null default now()
+);
+alter table public.ct_estudios enable row level security;
+alter table public.ct_membros enable row level security;
+alter table public.ct_sugestoes enable row level security;
+revoke all on public.ct_estudios, public.ct_membros, public.ct_sugestoes from anon, authenticated;
+
+create or replace function public.ct_email() returns text language sql stable as $$
+  select lower(coalesce(auth.jwt() ->> 'email', ''));
+$$;
+-- Estúdio da conta conectada (só se estiver ativo).
+create or replace function public.ct_meu_estudio()
+returns uuid language sql stable security definer set search_path = public, extensions as $$
+  select m.estudio_id from ct_membros m join ct_estudios e on e.id = m.estudio_id
+  where m.email = ct_email() and e.ativo;
+$$;
+revoke all on function public.ct_meu_estudio() from public;
+grant execute on function public.ct_meu_estudio() to authenticated;
+
+alter table public.ct_pedidos add column if not exists estudio_id uuid references public.ct_estudios (id) on delete cascade;
+create index if not exists ct_pedidos_estudio on public.ct_pedidos (estudio_id, criado_em desc);
+
+-- Primeira vez: os pedidos que já existem passam a ser do StudioCT 3D.
+do $$
+declare novo uuid;
+begin
+  if not exists (select 1 from public.ct_estudios) then
+    insert into public.ct_estudios (nome, whatsapp, cor, logo)
+    values ('StudioCT 3D', coalesce((select whatsapp from public.ct_config where id = 1), ''), '#B8862B', 'assets/logo.webp')
+    returning id into novo;
+    update public.ct_pedidos set estudio_id = novo where estudio_id is null;
+    insert into public.ct_membros (email, estudio_id) select email, novo from public.ct_admins on conflict do nothing;
+  end if;
+end $$;
+alter table public.ct_pedidos alter column estudio_id set default public.ct_meu_estudio();
+alter table public.ct_pedidos alter column estudio_id set not null;
+
+-- O pedido nasce no estúdio de quem cadastra e nunca muda de estúdio.
+create or replace function public.ct_novo_codigo()
+returns trigger language plpgsql security definer set search_path = public, extensions as $$
+declare base text;
+begin
+  base := ct_slug(nullif(split_part(btrim(new.cliente), ' ', 1), ''));
+  if base = '' then base := ct_slug(new.titulo); end if;
+  if base = '' then base := 'pedido'; end if;
+  new.codigo := base || '-' || encode(gen_random_bytes(6), 'hex');
+  if new.feitos >= new.quantidade and new.etapa in ('fila', 'producao') then new.etapa := 'pronto'; end if;
+  return new;
+end;
+$$;
+create or replace function public.ct_mesmo_estudio()
+returns trigger language plpgsql as $$
+begin
+  new.estudio_id := old.estudio_id;
+  return new;
+end;
+$$;
+drop trigger if exists ct_mesmo_estudio on public.ct_pedidos;
+create trigger ct_mesmo_estudio before update on public.ct_pedidos for each row execute function public.ct_mesmo_estudio();
+
+-- Regras: cada conta só vê e altera os pedidos do próprio estúdio.
+drop policy if exists "admin pedidos" on public.ct_pedidos;
+drop policy if exists "estudio pedidos" on public.ct_pedidos;
+create policy "estudio pedidos" on public.ct_pedidos for all to authenticated
+  using (estudio_id = public.ct_meu_estudio()) with check (estudio_id = public.ct_meu_estudio());
+drop policy if exists "admin eventos" on public.ct_eventos;
+drop policy if exists "estudio eventos" on public.ct_eventos;
+create policy "estudio eventos" on public.ct_eventos for select to authenticated
+  using (exists (select 1 from public.ct_pedidos p where p.id = pedido_id));
+
+-- Dados do estúdio no formato que as páginas usam.
+create or replace function public.ct_estudio_json(e public.ct_estudios) returns json language sql stable as $$
+  select json_build_object('id', e.id, 'nome', e.nome, 'whatsapp', e.whatsapp, 'cor', e.cor, 'logo', e.logo,
+    'prazo_entrega', e.prazo_entrega, 'prazo_correios', e.prazo_correios, 'ativo', e.ativo);
+$$;
+
+-- Quem sou eu: estúdio (mesmo pausado, para avisar) e se sou dono da plataforma.
+create or replace function public.ct_minha_conta()
+returns json language sql stable security definer set search_path = public, extensions as $$
+  select json_build_object('email', ct_email(), 'dono_plataforma', ct_eh_admin(),
+    'estudio', (select ct_estudio_json(e) from ct_membros m join ct_estudios e on e.id = m.estudio_id where m.email = ct_email()));
+$$;
+revoke all on function public.ct_minha_conta() from public;
+grant execute on function public.ct_minha_conta() to authenticated;
+
+-- Configurações do estúdio (qualquer pessoa do estúdio pode mudar). Logo null = mantém a atual.
+create or replace function public.ct_salvar_estudio(p_nome text, p_whatsapp text, p_cor text, p_logo text,
+  p_prazo_entrega text, p_prazo_correios text)
+returns json language plpgsql security definer set search_path = public, extensions as $$
+declare e ct_estudios; meu uuid := ct_meu_estudio();
+begin
+  if meu is null then raise exception 'Sem permissão' using errcode = '42501'; end if;
+  update ct_estudios set nome = btrim(p_nome), whatsapp = coalesce(p_whatsapp, ''), cor = upper(p_cor),
+    logo = coalesce(p_logo, logo), prazo_entrega = btrim(p_prazo_entrega), prazo_correios = btrim(p_prazo_correios)
+  where id = meu returning * into e;
+  return ct_estudio_json(e);
+end;
+$$;
+revoke all on function public.ct_salvar_estudio(text, text, text, text, text, text) from public;
+grant execute on function public.ct_salvar_estudio(text, text, text, text, text, text) to authenticated;
+
+create or replace function public.ct_enviar_sugestao(p_texto text)
+returns void language plpgsql security definer set search_path = public, extensions as $$
+begin
+  if ct_meu_estudio() is null and not ct_eh_admin() then raise exception 'Sem permissão' using errcode = '42501'; end if;
+  insert into ct_sugestoes (estudio_id, email, texto) values (ct_meu_estudio(), ct_email(), btrim(p_texto));
+end;
+$$;
+revoke all on function public.ct_enviar_sugestao(text) from public;
+grant execute on function public.ct_enviar_sugestao(text) to authenticated;
+
+-- ---------- Painel do dono da plataforma ----------
+create or replace function public.ct_plat_checar() returns void language plpgsql stable security definer set search_path = public, extensions as $$
+begin
+  if not ct_eh_admin() then raise exception 'Sem permissão' using errcode = '42501'; end if;
+end;
+$$;
+revoke all on function public.ct_plat_checar() from public;
+
+create or replace function public.ct_plat_estudios()
+returns json language plpgsql stable security definer set search_path = public, extensions as $$
+begin
+  perform ct_plat_checar();
+  return coalesce((select json_agg(x order by x.criado_em) from (
+    select e.id, e.nome, e.ativo, e.criado_em, (e.logo <> '') as tem_logo,
+      coalesce((select json_agg(m.email order by m.criado_em) from ct_membros m where m.estudio_id = e.id), '[]') as pessoas,
+      (select count(*) from ct_pedidos p where p.estudio_id = e.id) as pedidos,
+      (select count(*) from ct_pedidos p where p.estudio_id = e.id and p.criado_em > now() - interval '30 days') as pedidos_30d,
+      (select count(*) from ct_pedidos p where p.estudio_id = e.id and p.etapa not in ('pronto','entregue','cancelado')) as em_andamento,
+      (select max(p.criado_em) from ct_pedidos p where p.estudio_id = e.id) as ultimo_pedido,
+      (select max(p.atualizado_em) from ct_pedidos p where p.estudio_id = e.id) as ultima_atualizacao
+    from ct_estudios e) x), '[]');
+end;
+$$;
+
+create or replace function public.ct_plat_criar_estudio(p_nome text, p_email text)
+returns uuid language plpgsql security definer set search_path = public, extensions as $$
+declare novo uuid;
+begin
+  perform ct_plat_checar();
+  if exists (select 1 from ct_membros where email = lower(btrim(p_email))) then
+    raise exception 'Este e-mail já está em outro estúdio' using errcode = '23505';
+  end if;
+  insert into ct_estudios (nome) values (btrim(p_nome)) returning id into novo;
+  insert into ct_membros (email, estudio_id) values (lower(btrim(p_email)), novo);
+  return novo;
+end;
+$$;
+
+create or replace function public.ct_plat_editar_estudio(p_id uuid, p_nome text, p_ativo boolean)
+returns void language plpgsql security definer set search_path = public, extensions as $$
+begin
+  perform ct_plat_checar();
+  update ct_estudios set nome = coalesce(nullif(btrim(p_nome), ''), nome), ativo = coalesce(p_ativo, ativo) where id = p_id;
+end;
+$$;
+
+create or replace function public.ct_plat_add_pessoa(p_estudio uuid, p_email text)
+returns void language plpgsql security definer set search_path = public, extensions as $$
+begin
+  perform ct_plat_checar();
+  if exists (select 1 from ct_membros where email = lower(btrim(p_email))) then
+    raise exception 'Este e-mail já está em um estúdio' using errcode = '23505';
+  end if;
+  insert into ct_membros (email, estudio_id) values (lower(btrim(p_email)), p_estudio);
+end;
+$$;
+
+create or replace function public.ct_plat_del_pessoa(p_email text)
+returns void language plpgsql security definer set search_path = public, extensions as $$
+begin
+  perform ct_plat_checar();
+  delete from ct_membros where email = lower(btrim(p_email));
+end;
+$$;
+
+create or replace function public.ct_plat_sugestoes()
+returns json language plpgsql stable security definer set search_path = public, extensions as $$
+begin
+  perform ct_plat_checar();
+  return coalesce((select json_agg(x order by x.criado_em desc) from (
+    select s.id, s.texto, s.email, s.criado_em, e.nome as estudio
+    from ct_sugestoes s left join ct_estudios e on e.id = s.estudio_id
+    order by s.criado_em desc limit 200) x), '[]');
+end;
+$$;
+
+do $$
+declare f text;
+begin
+  foreach f in array array['ct_plat_estudios()', 'ct_plat_criar_estudio(text, text)', 'ct_plat_editar_estudio(uuid, text, boolean)',
+    'ct_plat_add_pessoa(uuid, text)', 'ct_plat_del_pessoa(text)', 'ct_plat_sugestoes()'] loop
+    execute format('revoke all on function public.%s from public', f);
+    execute format('grant execute on function public.%s to authenticated', f);
+  end loop;
+end $$;
+
+-- O que o cliente vê agora inclui a marca do estúdio do pedido.
+create or replace function public.ct_pedido_publico(p_codigo text)
+returns json language sql stable security definer set search_path = public, extensions as $$
+  select case when p.id is null then null else json_build_object(
+    'titulo', p.titulo, 'tipo', p.tipo, 'cliente', split_part(btrim(p.cliente), ' ', 1),
+    'quantidade', p.quantidade, 'feitos', p.feitos, 'etapa', p.etapa, 'envio', p.envio,
+    'termino', p.inicio + make_interval(secs => p.prazo_horas * 3600),
+    'mensagem', p.mensagem, 'atualizado_em', p.atualizado_em, 'agora', now(),
+    'whatsapp', coalesce(nullif(p.whatsapp_atendimento, ''), nullif(e.whatsapp, ''), ''),
+    'estudio', json_build_object('nome', e.nome, 'logo', e.logo, 'cor', e.cor,
+      'prazo_entrega', e.prazo_entrega, 'prazo_correios', e.prazo_correios),
+    'ritmo_horas', case when p.etapa = 'producao' and p.feitos > 0 and p.feitos < p.quantidade and now() - p.inicio > interval '1 hour'
+      then round(((p.quantidade - p.feitos) / (p.feitos / (extract(epoch from now() - p.inicio) / 3600)))::numeric, 2) end
+  ) end
+  from (select 1) x left join ct_pedidos p on p.codigo = p_codigo and char_length(p_codigo) >= 12
+  left join ct_estudios e on e.id = p.estudio_id;
+$$;
+revoke all on function public.ct_pedido_publico(text) from public;
+grant execute on function public.ct_pedido_publico(text) to anon, authenticated;
+
+-- =====================================================================
 -- ADMINISTRADORES: troque pelo seu e-mail (em minúsculas).
 -- =====================================================================
 insert into public.ct_admins (email) values ('psimoes2704@gmail.com') on conflict do nothing;
+-- Instalação nova: o dono da plataforma também entra no primeiro estúdio.
+insert into public.ct_membros (email, estudio_id)
+select a.email, (select id from public.ct_estudios order by criado_em limit 1) from public.ct_admins a
+where exists (select 1 from public.ct_estudios) and not exists (select 1 from public.ct_membros)
+on conflict do nothing;

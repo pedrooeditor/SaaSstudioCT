@@ -1,6 +1,6 @@
-/* Studio CT: visual comum. A cor da marca (--cor) vem das configurações do estúdio. */
+/* Visual comum. A cor da marca vem das configurações de cada estúdio (CT.aplicarCor). */
 :root {
-  /* Identidade StudioCT 3D: dourado, bege e marrom (da logo) */
+  /* Paleta padrão: dourado, bege e marrom */
   --cor: #B8862B;          /* dourado escuro: destaques e barras */
   --ouro: #D9A93F;
   --ouro-claro: #F1D488;
@@ -9,6 +9,10 @@
   --texto: #3B1D0E;        /* marrom da logo */
   --suave: #86654F;
   --linha: #E9D8BC;
+  --trilho: #EFE2CC;
+  --rodape-dlg: #FBF3E6;
+  --texto-btn: var(--texto);
+  --borda-btn: #A97B22;
   --serifa: Georgia, "Times New Roman", serif;
   --ok: #2F6B3A; --ok-bg: #E2F1DF;
   --alerta: #8A5A00; --alerta-bg: #FBEBC4;
@@ -17,6 +21,7 @@
   --sombra: 0 1px 2px rgb(59 29 14 / .06), 0 12px 30px -16px rgb(59 29 14 / .35);
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0; background: var(--fundo); color: var(--texto);
@@ -35,7 +40,7 @@ button { cursor: pointer; }
 .btn:hover { border-color: var(--cor); }
 .btn:focus-visible, .campo input:focus-visible, .campo select:focus-visible, .campo textarea:focus-visible { outline: 2px solid var(--cor); outline-offset: 2px; }
 .btn-cor, a.btn-cor {
-  background: linear-gradient(180deg, var(--ouro-claro), var(--ouro) 55%, var(--cor)); border-color: #A97B22; color: var(--texto);
+  background: linear-gradient(180deg, var(--ouro-claro), var(--ouro) 55%, var(--cor)); border-color: var(--borda-btn); color: var(--texto-btn);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / .6), 0 6px 16px -8px rgb(140 95 20 / .7);
 }
 .btn-cor:hover { filter: brightness(1.05); }
@@ -51,7 +56,7 @@ button { cursor: pointer; }
 .selo-pronto, .selo-entregue { background: var(--ok-bg); color: var(--ok); }
 .selo-cancelado { background: var(--perigo-bg); color: var(--perigo); }
 
-.barra { height: 10px; border-radius: 999px; background: #EFE2CC; overflow: hidden; }
+.barra { height: 10px; border-radius: 999px; background: var(--trilho); overflow: hidden; }
 .barra > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--cor), var(--ouro), var(--ouro-claro)); transition: width .6s ease; }
 
 .campo { display: grid; gap: 6px; }
@@ -73,7 +78,7 @@ dialog::backdrop { background: rgb(59 29 14 / .45); }
 .dlg-topo { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 16px 18px; border-bottom: 1px solid var(--linha); }
 .dlg-topo h2 { margin: 0; font-size: 19px; font-family: var(--serifa); }
 .dlg-corpo { display: grid; gap: 14px; padding: 16px 18px; }
-.dlg-pe { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--linha); background: #FBF3E6; }
+.dlg-pe { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--linha); background: var(--rodape-dlg); }
 .icone-btn { display: inline-grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--linha); border-radius: 12px; background: #fff; }
 
 .aviso { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom)); z-index: 60; max-width: calc(100vw - 24px);
@@ -83,3 +88,5 @@ dialog::backdrop { background: rgb(59 29 14 / .45); }
 .aviso.ruim { background: var(--perigo); }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+
+.inicial { display: inline-grid; place-items: center; flex: none; border-radius: 22%; background: linear-gradient(160deg, var(--ouro-claro), var(--ouro) 60%, var(--cor)); color: var(--texto-btn); font-family: var(--serifa); font-weight: 700; box-shadow: var(--sombra); }

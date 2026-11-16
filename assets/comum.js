@@ -1,4 +1,4 @@
-/* Studio CT: funções comuns às duas páginas (servidor, login, datas). */
+/* Acompanhamento de pedidos: funções comuns às duas páginas (servidor, login, datas). */
 (() => {
   'use strict';
   const CFG = window.STUDIOCT_CONFIG || {};
@@ -99,15 +99,19 @@
     return d === 1 ? 'ontem' : `há ${d} dias`;
   }
 
-  const NOME_ESTUDIO = 'StudioCT 3D';
   const ETAPAS = ['fila', 'producao', 'pronto', 'entregue'];
   const NOME_ETAPA = { fila: 'Na fila', producao: 'Em produção', pronto: 'Pronto', entregue: 'Entregue', cancelado: 'Cancelado', pausado: 'Em produção', acabamento: 'Em produção' };
-  // Tipos de envio e o que o cliente vê em cada um.
-  const ENVIO = {
-    entrega: { nome: 'Entrega feita por nós', prazo: 'de 2 a 5 dias corridos após o término da produção', final: 'Entregue', prontoMsg: 'Seu pedido está pronto! Agora é só aguardar a entrega, de 2 a 5 dias corridos.', fimMsg: 'Pedido entregue. Obrigado pela confiança!' },
-    correios: { nome: 'Correios', prazo: 'postagem em 2 a 3 dias úteis após o término da produção. O prazo de chegada é dos Correios: você recebe o código de rastreio.', final: 'Postado', prontoMsg: 'Seu pedido está pronto! A postagem nos Correios acontece em 2 a 3 dias úteis.', fimMsg: 'Pedido postado nos Correios. Acompanhe pelo código de rastreio que enviamos.' },
-    retirada: { nome: 'Retirada no local', prazo: 'avisamos aqui quando estiver pronto para retirar.', final: 'Retirado', prontoMsg: 'Seu pedido está pronto para retirada!', fimMsg: 'Pedido retirado. Obrigado pela confiança!' }
-  };
+  // Tipos de envio e o que o cliente vê em cada um. Os prazos vêm das configurações de cada estúdio.
+  const PRAZOS_PADRAO = { prazo_entrega: 'de 2 a 5 dias corridos', prazo_correios: '2 a 3 dias úteis' };
+  function envios(estudio) {
+    const e = Object.assign({}, PRAZOS_PADRAO, estudio || {});
+    return {
+      entrega: { nome: 'Entrega feita por nós', curto: `Entrega própria (${e.prazo_entrega})`, prazo: `${e.prazo_entrega} após o término da produção`, final: 'Entregue', prontoMsg: `Seu pedido está pronto! Agora é só aguardar a entrega: ${e.prazo_entrega}.`, fimMsg: 'Pedido entregue. Obrigado pela confiança!' },
+      correios: { nome: 'Correios', curto: `Correios (postagem em ${e.prazo_correios})`, prazo: `postagem em ${e.prazo_correios} após o término da produção. O prazo de chegada é dos Correios: você recebe o código de rastreio.`, final: 'Postado', prontoMsg: `Seu pedido está pronto! A postagem nos Correios acontece em ${e.prazo_correios}.`, fimMsg: 'Pedido postado nos Correios. Acompanhe pelo código de rastreio que enviamos.' },
+      retirada: { nome: 'Retirada no local', curto: 'Retirada no local', prazo: 'avisamos aqui quando estiver pronto para retirar.', final: 'Retirado', prontoMsg: 'Seu pedido está pronto para retirada!', fimMsg: 'Pedido retirado. Obrigado pela confiança!' }
+    };
+  }
+  const ENVIO = envios();
   const nomeEtapa = (etapa, envio) => etapa === 'entregue' ? (ENVIO[envio] || ENVIO.entrega).final : etapa === 'pronto' && envio === 'retirada' ? 'Pronto para retirada' : NOME_ETAPA[etapa] || etapa;
 
   // WhatsApp: números brasileiros sem o 55 ganham o código do país.
@@ -131,15 +135,48 @@
     return n;
   };
 
-  // Cor da marca vinda das configurações do estúdio.
+  // Cor da marca de cada estúdio. O dourado padrão usa a paleta original; outras cores geram uma paleta parecida.
+  const COR_PADRAO = '#B8862B';
+  const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const rgbHex = c => '#' + c.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('').toUpperCase();
+  const misturar = (a, b, t) => rgbHex(hexRgb(a).map((v, i) => v + (hexRgb(b)[i] - v) * t));
+  const luz = h => { const [r, g, b] = hexRgb(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); return .2126 * r + .7152 * g + .0722 * b; };
   function aplicarCor(cor) {
-    if (!/^#[0-9A-F]{6}$/i.test(cor || '')) return;
-    document.documentElement.style.setProperty('--cor', cor);
+    const raiz = document.documentElement.style;
+    const props = ['--cor', '--ouro', '--ouro-claro', '--fundo', '--cartao', '--linha', '--trilho', '--rodape-dlg', '--texto-btn', '--borda-btn'];
+    props.forEach(p => raiz.removeProperty(p));
+    if (!/^#[0-9A-F]{6}$/i.test(cor || '') || cor.toUpperCase() === COR_PADRAO) return;
+    cor = cor.toUpperCase();
+    const escura = misturar(cor, '#000000', .18);
+    const media = misturar(cor, '#FFFFFF', .22);
+    raiz.setProperty('--cor', luz(cor) > .45 ? escura : cor);
+    raiz.setProperty('--ouro', media);
+    raiz.setProperty('--ouro-claro', misturar(cor, '#FFFFFF', .55));
+    raiz.setProperty('--fundo', misturar(cor, '#FFFFFF', .9));
+    raiz.setProperty('--cartao', misturar(cor, '#FFFFFF', .975));
+    raiz.setProperty('--linha', misturar(cor, '#FFFFFF', .78));
+    raiz.setProperty('--trilho', misturar(cor, '#FFFFFF', .82));
+    raiz.setProperty('--rodape-dlg', misturar(cor, '#FFFFFF', .94));
+    raiz.setProperty('--borda-btn', escura);
+    raiz.setProperty('--texto-btn', luz(media) > .35 ? '#1F1A17' : '#FFFFFF');
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', misturar(cor, '#FFFFFF', .9));
+  }
+  // Logo do estúdio (ou a inicial do nome, quando não tem logo).
+  function logoEstudio(estudio, tamanho, classe) {
+    const e = estudio || {};
+    if (e.logo) return el('img', { class: classe || '', src: e.logo, alt: e.nome || '', style: `width:${tamanho}px;height:auto;max-height:${Math.round(tamanho * 1.25)}px;object-fit:contain` });
+    const inicial = String(e.nome || '?').trim().charAt(0).toUpperCase() || '?';
+    return el('span', { class: 'inicial ' + (classe || ''), 'aria-hidden': 'true', style: `width:${tamanho}px;height:${tamanho}px;font-size:${Math.round(tamanho * .45)}px`, text: inicial });
+  }
+  function iconeAba(estudio) {
+    if (!estudio || !estudio.logo) return;
+    document.querySelectorAll('link[rel="icon"]').forEach(l => { l.href = estudio.logo; l.removeAttribute('type'); });
   }
 
   window.CT = {
     configurado: Boolean(URL_BASE && CHAVE), URL_BASE, pedir, entrar, sair, guardarSessao, garantirToken,
     get sessao() { return sessao; }, ErroServidor, nf, moeda, data, duracao, prazoTexto, quando, diaHora, relativo,
-    ETAPAS, NOME_ETAPA, NOME_ESTUDIO, ENVIO, nomeEtapa, linkWhats, el, aplicarCor
+    ETAPAS, NOME_ETAPA, ENVIO, envios, nomeEtapa, linkWhats, el, aplicarCor, logoEstudio, iconeAba, COR_PADRAO
   };
 })();
