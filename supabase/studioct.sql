@@ -564,3 +564,16 @@ insert into public.ct_membros (email, estudio_id)
 select a.email, (select id from public.ct_estudios order by criado_em limit 1) from public.ct_admins a
 where exists (select 1 from public.ct_estudios) and not exists (select 1 from public.ct_membros)
 on conflict do nothing;
+
+-- Segurança extra: o Supabase libera toda função nova para visitantes sem login (anon).
+-- Todas as funções já conferem quem está pedindo, mas aqui elas ficam fechadas para visitantes,
+-- menos a da página do cliente (ct_pedido_publico).
+do $$
+declare f record;
+begin
+  for f in select p.oid::regprocedure as assinatura from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname = 'public' and p.proname like 'ct\_%' and p.proname <> 'ct_pedido_publico' loop
+    execute format('revoke execute on function %s from public, anon', f.assinatura);
+    execute format('grant execute on function %s to authenticated', f.assinatura);
+  end loop;
+end $$;
