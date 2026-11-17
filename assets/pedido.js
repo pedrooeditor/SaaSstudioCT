@@ -159,7 +159,12 @@
               el('div', { class: 'num' }, el('span', { text: 'Total do pedido' }), el('b', { text: nf.format(p.quantidade) })))))),
       faixa,
       pedeAcao ? pagamento : null,
-      etapa === 'cancelado' ? null : el('section', { class: 'cartao' }, etapas),
+      etapa === 'cancelado' ? null : el('section', { class: 'cartao' }, etapas,
+        // Frase curta sobre a etapa atual (Na fila e Em produção; as outras já têm o aviso verde).
+        etapa === 'fila' ? el('p', { class: 'etapa-desc', text: esperaSinal
+          ? 'Seu pedido já está reservado. Falta só o sinal para começarmos!'
+          : 'Seu pedido já está garantido na fila e logo entra em produção!' }) : null,
+        etapa === 'producao' ? el('p', { class: 'etapa-desc', text: 'Suas peças estão sendo produzidas agora. Cada avanço aparece aqui.' }) : null),
       producao,
       pedeAcao ? null : pagamento,
       recado, whats,

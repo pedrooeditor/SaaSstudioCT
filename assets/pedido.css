@@ -33,6 +33,7 @@
 .acomp .etapas li.atual .bola { border-color: var(--cor); box-shadow: 0 0 0 4px rgb(217 169 63 / .3); }
 .acomp.concluido .etapas li.atual .bola { background: linear-gradient(180deg, var(--ouro-claro), var(--ouro)); box-shadow: 0 0 0 4px rgb(47 163 95 / .25); }
 .acomp .etapas li.atual { color: var(--texto); }
+.acomp .etapa-desc { margin: 12px 0 0; padding-top: 10px; border-top: 1px dashed var(--linha); text-align: center; color: var(--suave); font-size: 14px; line-height: 1.45; }
 .acomp .faixa { padding: 13px 15px; border-radius: 14px; font-weight: 650; }
 .acomp .faixa.perigo { background: var(--perigo-bg); color: var(--perigo); }
 .acomp .faixa.feito { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; padding: 16px; color: #fff;
