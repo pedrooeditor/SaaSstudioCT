@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#F6ECDC">
 <link rel="icon" type="image/svg+xml" href="assets/icone.svg">
-<link rel="stylesheet" href="assets/estilo.css?v=4">
+<link rel="stylesheet" href="assets/estilo.css?v=5">
 <style>
   .pagina { max-width: 980px; margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom)); }
   .topo { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
@@ -29,6 +29,7 @@
   .pedido-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
   .pedido h3 { margin: 0; font: 700 18px/1.25 var(--serifa); }
   .pedido .sub { color: var(--suave); font-size: 13.5px; }
+  .pedido .sub .num { color: var(--texto); }
   .pedido .meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; font-size: 14px; }
   .pedido .meta b { font-size: 15px; }
   .pedido .atraso { color: var(--alerta); font-weight: 700; }
@@ -56,7 +57,10 @@
   .atalhos { display: flex; flex-wrap: wrap; gap: 8px; }
   .atalhos .btn { flex: 1 1 80px; min-height: 42px; }
   .link-box { display: grid; gap: 10px; }
-  .link-box input { font-size: 14px; }
+  .link-box input, .link-box textarea { font-size: 14px; }
+  .link-box textarea { min-height: 128px; }
+  .link-box .dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .link-box small { color: var(--suave); font-size: 12.5px; margin-top: -4px; }
   .login { max-width: 420px; margin: 4vh auto 0; text-align: center; }
   .login .marca { display: grid; justify-items: center; margin: 0 auto 8px; }
   .login h1 { margin: 0 0 4px; font: 700 24px var(--serifa); }
@@ -121,7 +125,7 @@
       <div class="campo"><label for="pTipo">Tipo do pedido</label><input id="pTipo" list="tipos" maxlength="60" placeholder="Ex.: Decoração"></div>
       <div class="campo"><label for="pQtd">Quantidade total *</label><input id="pQtd" type="number" inputmode="numeric" min="1" step="1" placeholder="Ex.: 30"></div>
       <div class="campo"><label for="pCliente">Nome do cliente</label><input id="pCliente" maxlength="120" autocomplete="off"></div>
-      <div class="campo"><label for="pTel">WhatsApp do cliente</label><input id="pTel" type="tel" inputmode="tel" placeholder="(11) 99999-0000"><small>Para mandar o link para ele.</small></div>
+      <div class="campo"><label for="pTel">WhatsApp do cliente</label><input id="pTel" type="tel" inputmode="tel" placeholder="(11) 99999-0000"><small id="pTelDica">Para mandar o link para ele.</small></div>
       <div class="campo"><label for="pAtend">Seu WhatsApp (atendimento)</label><input id="pAtend" type="tel" inputmode="tel" placeholder="(11) 98888-7777"><small>O cliente fala com este número pelo botão da página.</small></div>
       <div class="campo"><label for="pEnvio">Envio *</label>
         <select id="pEnvio"><option value="entrega"></option><option value="correios"></option><option value="retirada"></option></select>
@@ -186,9 +190,11 @@
   <div class="dlg-topo"><h2 id="tLink">Link do cliente</h2><button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
   <div class="dlg-corpo link-box">
     <p style="margin:0" id="lTexto"></p>
-    <div class="campo"><label for="lUrl">Link</label><input id="lUrl" readonly></div>
-    <button class="btn" type="button" id="btnCopiar">Copiar link</button>
-    <a class="btn btn-cor" id="btnWhats" target="_blank" rel="noopener noreferrer">Enviar pelo WhatsApp</a>
+    <a class="btn btn-cor" id="btnWhats" target="_blank" rel="noopener noreferrer" style="min-height:52px;font-size:16px">Enviar pelo WhatsApp</a>
+    <small id="lPara"></small>
+    <div class="campo"><label for="lMsg">Mensagem que vai para o cliente</label><textarea id="lMsg" readonly></textarea></div>
+    <div class="campo"><label for="lUrl">Link do pedido</label><input id="lUrl" readonly></div>
+    <div class="dupla"><button class="btn" type="button" id="btnCopiarMsg">Copiar mensagem</button><button class="btn" type="button" id="btnCopiar">Copiar só o link</button></div>
     <a class="btn" id="btnAbrir" target="_blank" rel="noopener noreferrer">Ver como o cliente vê</a>
   </div>
 </dialog>
@@ -268,8 +274,8 @@
 
 <div class="aviso" id="aviso" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=4"></script>
-<script src="assets/comum.js?v=4"></script>
+<script src="config.js?v=5"></script>
+<script src="assets/comum.js?v=5"></script>
 <script>
 (() => {
   'use strict';
@@ -439,7 +445,7 @@
       FILTROS.map(x => el('button', { type: 'button', class: (x.id === vista.filtro ? 'on ' : '') + (x.id === 'atrasados' && pedidos.some(atrasado) ? 'atraso' : ''), 'aria-pressed': String(x.id === vista.filtro), onclick: () => { vista.filtro = x.id; desenhar(); } },
         el('b', { text: String(pedidos.filter(x.teste).length) }), el('span', { text: x.nome }))));
     const busca = el('label', { class: 'busca' }, el('span', { class: 'sr', text: 'Buscar' }), svg('i-busca'),
-      el('input', { type: 'search', placeholder: 'Buscar por título, cliente ou tipo', value: vista.busca, oninput: e => { vista.busca = e.target.value; desenharLista(); } }));
+      el('input', { type: 'search', placeholder: 'Buscar por nº do pedido, cliente ou título', value: vista.busca, oninput: e => { vista.busca = e.target.value; desenharLista(); } }));
     app.replaceChildren(
       cabecalho(CT.logoEstudio(estudio(), 48), estudio().nome, 'Painel de pedidos'),
       resumo, busca, el('div', { class: 'lista', id: 'lista' }),
@@ -454,13 +460,21 @@
   function desenharLista() {
     const f = FILTROS.find(x => x.id === vista.filtro) || FILTROS[0];
     const q = vista.busca.trim().toLowerCase();
-    const visiveis = pedidos.filter(f.teste).filter(p => !q || [p.titulo, p.cliente, p.tipo].join(' ').toLowerCase().includes(q));
+    // Com busca, procura em todos os pedidos (não só na aba aberta): o número do pedido leva direto a ele.
+    const num = q.replace(/^(n[ºo°.]*|#|pedido)\s*/g, '').replace(/^(n[ºo°.]*|#)\s*/, '');
+    const soNumero = /^\d+$/.test(num), fone = q.replace(/\D/g, '');
+    let visiveis = pedidos.filter(f.teste);
+    if (q) {
+      const exatos = soNumero ? pedidos.filter(p => String(p.numero) === num) : [];
+      visiveis = exatos.length ? exatos : pedidos.filter(p => (soNumero && String(p.numero).includes(num))
+        || [p.titulo, p.cliente, p.tipo].join(' ').toLowerCase().includes(q) || (fone.length >= 8 && String(p.telefone || '').includes(fone)));
+    }
     const lista = $('#lista');
     if (!lista) return;
     if (!visiveis.length) {
       lista.replaceChildren(el('div', { class: 'cartao vazio' },
-        el('b', { text: pedidos.length ? 'Nenhum pedido aqui' : 'Nenhum pedido ainda' }),
-        pedidos.length ? 'Troque o filtro ou a busca.' : 'Toque em "Novo pedido" para cadastrar o primeiro.'));
+        el('b', { text: q ? 'Nenhum pedido encontrado' : pedidos.length ? 'Nenhum pedido aqui' : 'Nenhum pedido ainda' }),
+        q ? 'Confira o número do pedido ou o nome do cliente.' : pedidos.length ? 'Troque o filtro.' : 'Toque em "Novo pedido" para cadastrar o primeiro.'));
       return;
     }
     lista.replaceChildren(...visiveis.map(cartao));
@@ -481,7 +495,7 @@
     const emAndamento = !fimEtapa(p.etapa);
     return el('article', { class: 'cartao pedido', 'data-id': p.id },
       el('div', { class: 'pedido-topo' },
-        el('div', {}, el('h3', { text: p.titulo }), el('div', { class: 'sub', text: [p.cliente, p.tipo, envio.nome].filter(Boolean).join(' · ') })),
+        el('div', {}, el('h3', { text: p.titulo }), el('div', { class: 'sub' }, el('b', { class: 'num', text: `nº ${p.numero}` }), ' · ' + [p.cliente, p.tipo, envio.nome].filter(Boolean).join(' · '))),
         el('span', { class: 'selo selo-' + p.etapa }, el('i'), CT.nomeEtapa(p.etapa, p.envio))),
       el('div', { class: 'barra', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(p.quantidade), 'aria-valuenow': String(p.feitos), 'aria-label': `${pct}% pronto` }, el('span', { style: `width:${pct}%` })),
       el('div', { class: 'meta' },
@@ -551,6 +565,18 @@
     box.textContent = `Término previsto da produção: ${CT.quando(fim)}`;
   }
   ['#pPrazo', '#pUnidade', '#pInicio'].forEach(s => $(s).addEventListener('input', atualizarPrevisao));
+  // Confere o WhatsApp do cliente enquanto digita: o botão de enviar só funciona com um número que tenha WhatsApp.
+  function dicaFone() {
+    const bruto = digitos($('#pTel').value), n = CT.celular(bruto), d = $('#pTelDica');
+    let t = 'Para mandar o link para ele.', alerta = false;
+    if (bruto && n.length < 10) t = 'Coloque o DDD e o número.';
+    else if (n.length === 11 && n[2] === '9') t = `Celular: ${CT.formatarFone(n)}`;
+    else if (n.length === 10) { t = `${CT.formatarFone(n)} parece telefone fixo (celular tem 9 números depois do DDD). O envio só funciona se este número tiver WhatsApp.`; alerta = true; }
+    else if (n.length === 11) { t = `Confira: celular começa com 9 depois do DDD. Ficou ${CT.formatarFone(n)}.`; alerta = true; }
+    else if (bruto) t = `Número: ${n}`;
+    d.textContent = t; d.className = alerta ? 'dica-alerta' : '';
+  }
+  $('#pTel').addEventListener('input', dicaFone);
   function abrirPedido(p) {
     editando = p || null;
     $('#tPedido').textContent = p ? 'Editar pedido' : 'Novo pedido';
@@ -558,7 +584,7 @@
     $('#pTipo').value = p ? p.tipo : '';
     $('#pQtd').value = p ? p.quantidade : '';
     $('#pCliente').value = p ? p.cliente : '';
-    $('#pTel').value = p ? p.telefone : '';
+    $('#pTel').value = p ? CT.formatarFone(p.telefone) : '';
     $('#pAtend').value = p ? (p.whatsapp_atendimento || '') : (estudio().whatsapp || ls.get(ATEND_KEY));
     const tipos = CT.envios(estudio());
     [...$('#pEnvio').options].forEach(o => { o.textContent = tipos[o.value].curto; });
@@ -580,7 +606,7 @@
     $('#btnExcluir').hidden = !p;
     $('#pErro').textContent = '';
     document.querySelectorAll('#dlgPedido .invalido').forEach(n => n.classList.remove('invalido'));
-    atualizarPrevisao();
+    atualizarPrevisao(); dicaFone();
     abrir($('#dlgPedido'));
     $('#pTitulo').focus();
   }
@@ -591,7 +617,7 @@
     const titulo = $('#pTitulo').value.trim();
     const qtd = inteiro($('#pQtd').value), feitos = inteiro($('#pFeitos').value) || 0;
     const prazo = numero($('#pPrazo').value);
-    const tel = digitos($('#pTel').value), atend = digitos($('#pAtend').value);
+    const tel = CT.celular($('#pTel').value), atend = CT.celular($('#pAtend').value);
     const pc = inteiro($('#pPorChapa').value), nch = inteiro($('#pNChapas').value), hch = numero($('#pHChapa').value);
     if (!titulo) return erro('#pTitulo', 'Dê um título ao pedido.');
     if (!(qtd >= 1)) return erro('#pQtd', 'A quantidade precisa ser um número inteiro maior que zero.');
@@ -671,23 +697,31 @@
   });
 
   /* ---------- link do cliente ---------- */
+  function mensagemCliente(p, url) {
+    const primeiro = (p.cliente || '').trim().split(/\s+/)[0];
+    return `Olá${primeiro ? ', ' + primeiro : ''}! Aqui é da ${estudio().nome}.\n\nAqui está o seu pedido nº ${p.numero} (${p.titulo}). Você pode acompanhar o andamento por este link:\n${url}`;
+  }
   function abrirLink(p, recemCriado) {
-    const url = linkCliente(p);
-    $('#tLink').textContent = recemCriado ? 'Pedido criado!' : 'Link do cliente';
-    $('#lTexto').textContent = (recemCriado ? 'Mande este link para o cliente uma vez só: ' : '') + 'o mesmo link mostra sempre a situação atual do pedido. Só quem tem o link consegue ver.';
-    $('#lUrl').value = url;
+    const url = linkCliente(p), texto = mensagemCliente(p, url);
+    const primeiro = (p.cliente || '').trim().split(/\s+/)[0], fone = CT.celular(p.telefone);
+    $('#tLink').textContent = recemCriado ? `Pedido nº ${p.numero} criado!` : `Pedido nº ${p.numero}`;
+    $('#lTexto').textContent = (recemCriado ? 'Mande o link para o cliente uma vez só: o' : 'O') + ' mesmo link mostra sempre a situação atual do pedido. Só quem tem o link consegue ver.';
+    $('#lUrl').value = url; $('#lMsg').value = texto;
     $('#btnAbrir').href = url;
-    const primeiro = (p.cliente || '').split(' ')[0];
-    const texto = `Olá${primeiro ? ', ' + primeiro : ''}! Aqui é da ${estudio().nome}. Acompanhe a produção do seu pedido "${p.titulo}" por este link: ${url}`;
-    $('#btnWhats').href = p.telefone ? CT.linkWhats(p.telefone, texto) : `https://wa.me/?text=${encodeURIComponent(texto)}`;
-    $('#btnWhats').textContent = p.telefone ? `Enviar para ${primeiro || 'o cliente'} no WhatsApp` : 'Enviar pelo WhatsApp';
+    $('#btnWhats').href = fone ? CT.linkWhats(fone, texto) : `https://wa.me/?text=${encodeURIComponent(texto)}`;
+    $('#btnWhats').textContent = fone ? `Enviar para ${primeiro || 'o cliente'} no WhatsApp` : 'Enviar pelo WhatsApp';
+    $('#lPara').textContent = fone
+      ? `Abre a conversa com ${CT.formatarFone(fone)}. Se o WhatsApp disser que o número não existe, corrija o telefone em "Editar".`
+      : 'Este pedido está sem o WhatsApp do cliente: você escolhe o contato dentro do WhatsApp.';
     abrir($('#dlgLink'));
   }
-  $('#btnCopiar').addEventListener('click', async () => {
-    const v = $('#lUrl').value;
-    try { await navigator.clipboard.writeText(v); aviso('Link copiado.'); }
-    catch (_) { $('#lUrl').select(); try { document.execCommand('copy'); aviso('Link copiado.'); } catch (__) { aviso('Selecione o link e copie.', true); } }
-  });
+  async function copiar(campo, ok) {
+    const v = $(campo).value;
+    try { await navigator.clipboard.writeText(v); aviso(ok); }
+    catch (_) { $(campo).select(); try { document.execCommand('copy'); aviso(ok); } catch (__) { aviso('Selecione o texto e copie.', true); } }
+  }
+  $('#btnCopiarMsg').addEventListener('click', () => copiar('#lMsg', 'Mensagem copiada. Cole no WhatsApp do cliente.'));
+  $('#btnCopiar').addEventListener('click', () => copiar('#lUrl', 'Link copiado.'));
 
   /* ---------- menu ---------- */
   function abrirMenu() {
@@ -753,7 +787,7 @@
     catch (err) { $('#cErro').textContent = err.message; }
   });
   $('#btnSalvarConfig').addEventListener('click', async () => {
-    const nome = $('#cNome').value.trim(), w = digitos($('#cWhats').value);
+    const nome = $('#cNome').value.trim(), w = CT.celular($('#cWhats').value);
     const ent = $('#cEntrega').value.trim() || 'de 2 a 5 dias corridos', cor_ = $('#cCorreios').value.trim() || '2 a 3 dias úteis';
     if (!nome) { $('#cErro').textContent = 'Dê um nome ao estúdio.'; return $('#cNome').focus(); }
     if (w && w.length < 10) { $('#cErro').textContent = 'WhatsApp incompleto: coloque DDD e número.'; return $('#cWhats').focus(); }

@@ -62,6 +62,7 @@ button { cursor: pointer; }
 .campo { display: grid; gap: 6px; }
 .campo > label, .campo > .rotulo { font-size: 13px; font-weight: 700; color: var(--texto); }
 .campo small { color: var(--suave); font-size: 12.5px; }
+.campo small.dica-alerta { color: var(--alerta); font-weight: 650; }
 .campo input, .campo select, .campo textarea {
   width: 100%; min-height: 44px; padding: 9px 12px; border: 1px solid var(--linha); border-radius: 12px; background: #fff; font-size: 16px;
 }

@@ -114,9 +114,23 @@
   const ENVIO = envios();
   const nomeEtapa = (etapa, envio) => etapa === 'entregue' ? (ENVIO[envio] || ENVIO.entrega).final : etapa === 'pronto' && envio === 'retirada' ? 'Pronto para retirada' : NOME_ETAPA[etapa] || etapa;
 
-  // WhatsApp: números brasileiros sem o 55 ganham o código do país.
+  // Telefone brasileiro só com DDD + número: tira zeros à esquerda e o 55, e acrescenta o 9
+  // que falta em celular digitado no formato antigo (10 dígitos começando em 6 a 9).
+  function celular(v) {
+    let n = String(v || '').replace(/\D/g, '').replace(/^0+/, '');
+    if ((n.length === 12 || n.length === 13) && n.startsWith('55')) n = n.slice(2);
+    if (n.length === 10 && /[6-9]/.test(n[2])) n = n.slice(0, 2) + '9' + n.slice(2);
+    return n;
+  }
+  function formatarFone(v) {
+    const n = celular(v);
+    if (n.length === 11) return `(${n.slice(0, 2)}) ${n.slice(2, 7)}-${n.slice(7)}`;
+    if (n.length === 10) return `(${n.slice(0, 2)}) ${n.slice(2, 6)}-${n.slice(6)}`;
+    return n;
+  }
+  // WhatsApp: números brasileiros ganham o código do país. Sem número, o WhatsApp deixa escolher o contato.
   function linkWhats(numero, texto) {
-    let n = String(numero || '').replace(/\D/g, '');
+    let n = celular(numero);
     if (n.length === 10 || n.length === 11) n = '55' + n;
     return `https://wa.me/${n}?text=${encodeURIComponent(texto)}`;
   }
@@ -181,6 +195,6 @@
   window.CT = {
     configurado: Boolean(URL_BASE && CHAVE), URL_BASE, pedir, entrar, sair, guardarSessao, garantirToken,
     get sessao() { return sessao; }, ErroServidor, nf, moeda, data, duracao, prazoTexto, quando, diaHora, relativo,
-    ETAPAS, NOME_ETAPA, ENVIO, envios, nomeEtapa, linkWhats, el, aplicarCor, logoEstudio, iconeAba, COR_PADRAO
+    ETAPAS, NOME_ETAPA, ENVIO, envios, nomeEtapa, linkWhats, celular, formatarFone, el, aplicarCor, logoEstudio, iconeAba, COR_PADRAO
   };
 })();

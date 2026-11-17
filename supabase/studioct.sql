@@ -223,29 +223,6 @@ end $$;
 alter table public.ct_pedidos alter column estudio_id set default public.ct_meu_estudio();
 alter table public.ct_pedidos alter column estudio_id set not null;
 
--- O pedido nasce no estúdio de quem cadastra e nunca muda de estúdio.
-create or replace function public.ct_novo_codigo()
-returns trigger language plpgsql security definer set search_path = public, extensions as $$
-declare base text;
-begin
-  base := ct_slug(nullif(split_part(btrim(new.cliente), ' ', 1), ''));
-  if base = '' then base := ct_slug(new.titulo); end if;
-  if base = '' then base := 'pedido'; end if;
-  new.codigo := base || '-' || encode(gen_random_bytes(6), 'hex');
-  if new.feitos >= new.quantidade and new.etapa in ('fila', 'producao') then new.etapa := 'pronto'; end if;
-  return new;
-end;
-$$;
-create or replace function public.ct_mesmo_estudio()
-returns trigger language plpgsql as $$
-begin
-  new.estudio_id := old.estudio_id;
-  return new;
-end;
-$$;
-drop trigger if exists ct_mesmo_estudio on public.ct_pedidos;
-create trigger ct_mesmo_estudio before update on public.ct_pedidos for each row execute function public.ct_mesmo_estudio();
-
 -- Regras: cada conta só vê e altera os pedidos do próprio estúdio.
 drop policy if exists "admin pedidos" on public.ct_pedidos;
 drop policy if exists "estudio pedidos" on public.ct_pedidos;
@@ -383,13 +360,57 @@ begin
   end loop;
 end $$;
 
+-- =====================================================================
+-- Versão 4: número do pedido. Curto e em sequência dentro de cada estúdio (1001, 1002...).
+-- O cliente informa o número no atendimento e o estúdio acha o pedido pela busca do painel.
+-- =====================================================================
+alter table public.ct_pedidos add column if not exists numero integer;
+-- Pedidos que já existiam ganham número pela ordem de criação (sem mexer na data de atualização).
+alter table public.ct_pedidos disable trigger user;
+update public.ct_pedidos p set numero = n.num from (
+  select q.id, coalesce((select max(x.numero) from public.ct_pedidos x where x.estudio_id = q.estudio_id), 1000)
+    + row_number() over (partition by q.estudio_id order by q.criado_em, q.id) as num
+  from public.ct_pedidos q where q.numero is null) n
+where n.id = p.id;
+alter table public.ct_pedidos enable trigger user;
+alter table public.ct_pedidos alter column numero set not null;
+create unique index if not exists ct_pedidos_numero on public.ct_pedidos (estudio_id, numero);
+
+-- Pedido novo: código secreto do link, número em sequência do estúdio e etapa inicial.
+create or replace function public.ct_novo_codigo()
+returns trigger language plpgsql security definer set search_path = public, extensions as $$
+declare base text;
+begin
+  base := ct_slug(nullif(split_part(btrim(new.cliente), ' ', 1), ''));
+  if base = '' then base := ct_slug(new.titulo); end if;
+  if base = '' then base := 'pedido'; end if;
+  new.codigo := base || '-' || encode(gen_random_bytes(6), 'hex');
+  -- Trava o estúdio enquanto numera, para dois pedidos salvos ao mesmo tempo não pegarem o mesmo número.
+  perform 1 from ct_estudios where id = new.estudio_id for update;
+  select coalesce(max(numero), 1000) + 1 into new.numero from ct_pedidos where estudio_id = new.estudio_id;
+  if new.feitos >= new.quantidade and new.etapa in ('fila', 'producao') then new.etapa := 'pronto'; end if;
+  return new;
+end;
+$$;
+-- O pedido nunca muda de estúdio nem de número.
+create or replace function public.ct_mesmo_estudio()
+returns trigger language plpgsql as $$
+begin
+  new.estudio_id := old.estudio_id;
+  new.numero := old.numero;
+  return new;
+end;
+$$;
+drop trigger if exists ct_mesmo_estudio on public.ct_pedidos;
+create trigger ct_mesmo_estudio before update on public.ct_pedidos for each row execute function public.ct_mesmo_estudio();
+
 -- O que o cliente vê, pelo código secreto do link: nada de telefone ou dados internos, e com a marca do estúdio.
 -- A página manda o md5 da logo que já tem (p_logo_tenho) para não baixar a mesma logo a cada atualização.
 drop function if exists public.ct_pedido_publico(text);
 create or replace function public.ct_pedido_publico(p_codigo text, p_logo_tenho text default null)
 returns json language sql stable security definer set search_path = public, extensions as $$
   select case when p.id is null then null else json_build_object(
-    'titulo', p.titulo, 'tipo', p.tipo, 'cliente', split_part(btrim(p.cliente), ' ', 1),
+    'numero', p.numero, 'titulo', p.titulo, 'tipo', p.tipo, 'cliente', split_part(btrim(p.cliente), ' ', 1),
     'quantidade', p.quantidade, 'feitos', p.feitos, 'etapa', p.etapa, 'envio', p.envio,
     'termino', p.inicio + make_interval(secs => p.prazo_horas * 3600),
     'mensagem', p.mensagem, 'atualizado_em', p.atualizado_em, 'agora', now(),
