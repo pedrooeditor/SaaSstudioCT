@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#F6ECDC">
 <link rel="icon" type="image/svg+xml" href="assets/icone.svg">
-<link rel="stylesheet" href="assets/estilo.css?v=6">
+<link rel="stylesheet" href="assets/estilo.css?v=7">
 <style>
   .pagina { max-width: 980px; margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom)); }
   .topo { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
@@ -108,6 +108,59 @@
   .pedido .pg .ok { color: var(--verde-escuro); font-weight: 700; }
   .btn-verde { background: linear-gradient(180deg, #2A9958, #1A6E3D); border-color: #1A6E3D; color: #fff; }
   .secao-cfg { margin: 6px 0 -4px; font: 700 16px var(--serifa); }
+  /* Foto de referência */
+  .pedido-topo.com-foto { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; }
+  .foto-pedido { display: block; width: 76px; height: 76px; padding: 0; border: 2px solid #fff; border-radius: 16px; overflow: hidden; background: var(--trilho); box-shadow: 0 0 0 1px var(--linha), var(--sombra); cursor: zoom-in; }
+  .foto-pedido img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .foto-campo { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .foto-campo .previa { display: grid; place-items: center; width: 96px; height: 96px; border: 1px dashed var(--linha); border-radius: 16px; background: #fff; overflow: hidden; color: var(--suave); font-size: 12px; text-align: center; padding: 6px; }
+  .foto-campo .previa img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+  #dlgFoto { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; margin: 0; border-radius: 0; background: #0E0905; color: #fff; padding: 0; }
+  #dlgFoto::backdrop { background: #0E0905; }
+  #dlgFoto .foto-topo { position: absolute; inset: 0 0 auto; z-index: 2; display: flex; align-items: center; gap: 12px; padding: max(10px, env(safe-area-inset-top)) 12px 10px 16px; background: linear-gradient(rgb(0 0 0 / .65), transparent); }
+  #dlgFoto .foto-topo b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; }
+  #dlgFoto .icone-btn { background: rgb(255 255 255 / .14); border-color: transparent; color: #fff; width: 46px; height: 46px; }
+  #dlgFoto .palco-foto { display: grid; place-items: center; width: 100%; height: 100%; overflow: auto; }
+  #dlgFoto img { max-width: 100%; max-height: 100%; object-fit: contain; transition: filter .25s; }
+  #dlgFoto img.borrada { filter: blur(6px); }
+  #dlgFoto .carregando-foto { position: absolute; left: 50%; bottom: max(20px, env(safe-area-inset-bottom)); transform: translateX(-50%); padding: 6px 14px; border-radius: 999px; background: rgb(0 0 0 / .55); font-size: 14px; }
+  /* Cores do pedido */
+  .cores-form { display: grid; gap: 8px; padding-bottom: 12px; }
+  .cor-cab, .cor-linha { display: grid; grid-template-columns: 18px minmax(0, 1fr) 68px 68px 40px; gap: 6px; align-items: center; }
+  .cor-cab { font-size: 12px; font-weight: 700; color: var(--suave); }
+  .cor-linha input { width: 100%; min-height: 42px; padding: 0 10px; border: 1px solid var(--linha); border-radius: 10px; background: #fff; font-size: 16px; }
+  .cor-linha .icone-btn { width: 40px; height: 40px; }
+  .bolinha { display: inline-block; width: 16px; height: 16px; border-radius: 50%; border: 1px solid rgb(0 0 0 / .18); flex: none; }
+  .cores-pedido { display: grid; gap: 6px; padding: 10px 12px; border-radius: 14px; background: var(--fundo); }
+  .cor-item { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto auto; gap: 8px; align-items: center; min-height: 40px; }
+  .cor-item .nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 650; }
+  .cor-item .qt { font-size: 14px; color: var(--suave); white-space: nowrap; }
+  .cor-item .qt b { color: var(--texto); }
+  .cor-item .botoes { display: flex; gap: 6px; }
+  .cor-item .botoes .btn { min-height: 38px; padding: 0 10px; font-size: 14px; }
+  .cor-item.feita .nome { color: var(--suave); text-decoration: line-through; text-decoration-color: rgb(0 0 0 / .25); }
+  .cor-item .feito { color: var(--verde-escuro); font-weight: 800; font-size: 14px; white-space: nowrap; }
+  .cor-item .mini-barra { grid-column: 2 / -1; height: 5px; margin-top: -4px; border-radius: 999px; background: var(--trilho); overflow: hidden; }
+  .cor-item .mini-barra span { display: block; height: 100%; background: var(--ouro); }
+  .cor-item.feita .mini-barra span { background: var(--verde); }
+  .escolher-cor { display: grid; gap: 8px; }
+  .escolher-cor .btn { justify-content: flex-start; gap: 10px; min-height: 52px; }
+  .escolher-cor .btn small { margin-left: auto; color: var(--suave); font-weight: 600; }
+  .g-cor { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--linha); }
+  .g-cor:last-child { border: 0; }
+  .g-cor .passo { display: grid; grid-template-columns: 40px 58px 40px auto; gap: 6px; align-items: center; }
+  .g-cor .passo input { width: 100%; min-height: 40px; text-align: center; border: 1px solid var(--linha); border-radius: 10px; background: #fff; font: 700 17px var(--serifa); }
+  .g-cor .passo .icone-btn { width: 40px; height: 40px; font-weight: 800; }
+  .g-cor .passo .btn { min-height: 40px; padding: 0 10px; font-size: 13.5px; }
+  .g-cor .rot { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 650; }
+  .g-cor .rot small { display: block; color: var(--suave); font-weight: 500; }
+  @media (max-width: 420px) {
+    .foto-pedido { width: 64px; height: 64px; border-radius: 14px; }
+    .pedido-topo.com-foto { grid-template-columns: auto minmax(0, 1fr); }
+    .pedido-topo.com-foto > .selo { grid-column: 2; justify-self: start; }
+    .g-cor { grid-template-columns: 16px minmax(0, 1fr); }
+    .g-cor .passo { grid-column: 1 / -1; grid-template-columns: 44px 1fr 44px auto; }
+  }
   .aviso button { margin-left: 10px; border: 0; border-radius: 8px; padding: 5px 10px; background: rgb(255 255 255 / .2); color: #fff; font-weight: 700; }
   @media (max-width: 720px) {
     .resumo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -137,9 +190,22 @@
   <div class="dlg-topo"><h2 id="tPedido">Novo pedido</h2><button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
   <div class="dlg-corpo">
     <div class="grade">
+      <div class="campo inteiro"><span class="rotulo">Foto de referência (só você vê)</span>
+        <div class="foto-campo"><div class="previa" id="pFotoPrevia">Sem foto</div>
+          <div style="display:grid;gap:8px"><label class="btn" for="pFoto" style="cursor:pointer" id="pFotoEscolher">Escolher foto</label><input id="pFoto" type="file" accept="image/*" class="sr"><button class="btn" type="button" id="pFotoTirar" hidden>Remover foto</button></div>
+        </div><small>Aparece no cartão do pedido. Toque nela para ver em tela cheia.</small></div>
       <div class="campo inteiro"><label for="pTitulo">Título do pedido *</label><input id="pTitulo" maxlength="120" placeholder="Ex.: Decorações de Natal"></div>
       <div class="campo"><label for="pTipo">Tipo do pedido</label><input id="pTipo" list="tipos" maxlength="60" placeholder="Ex.: Decoração"></div>
-      <div class="campo"><label for="pQtd">Quantidade total *</label><input id="pQtd" type="number" inputmode="numeric" min="1" step="1" placeholder="Ex.: 30"></div>
+      <div class="campo"><label for="pQtd">Quantidade total *</label><input id="pQtd" type="number" inputmode="numeric" min="1" step="1" placeholder="Ex.: 30"><small id="pQtdDica" hidden>Soma das cores.</small></div>
+      <details class="chapas inteiro" id="pCoresBox">
+        <summary>+ Separar por cor (só você vê)</summary>
+        <div class="cores-form">
+          <div class="cor-cab"><span></span><span>Cor ou variação</span><span>Qtd</span><span>Prontos</span><span></span></div>
+          <div id="pCores" style="display:grid;gap:8px"></div>
+          <button class="btn" type="button" id="pCorMais">+ Adicionar cor</button>
+          <small style="color:var(--suave);font-size:12.5px">Para você se organizar na produção. O cliente vê só o total, sem as cores.</small>
+        </div>
+      </details>
       <div class="campo"><label for="pCliente">Nome do cliente</label><input id="pCliente" maxlength="120" autocomplete="off"></div>
       <div class="campo"><label for="pTel">WhatsApp do cliente</label><input id="pTel" type="tel" inputmode="tel" placeholder="(11) 99999-0000"><small id="pTelDica">Para mandar o link para ele.</small></div>
       <div class="campo"><label for="pAtend">Seu WhatsApp (atendimento)</label><input id="pAtend" type="tel" inputmode="tel" placeholder="(11) 98888-7777"><small>O cliente fala com este número pelo botão da página.</small></div>
@@ -190,6 +256,7 @@
     <button class="btn btn-cor" type="button" id="btnSalvarPedido">Salvar pedido</button>
   </div>
 </dialog>
+<datalist id="sugCores"><option value="Rosa"><option value="Vermelho"><option value="Azul"><option value="Azul claro"><option value="Verde"><option value="Amarelo"><option value="Laranja"><option value="Roxo"><option value="Lilás"><option value="Preto"><option value="Branco"><option value="Cinza"><option value="Marrom"><option value="Bege"><option value="Dourado"><option value="Prata"><option value="Transparente"></datalist>
 <datalist id="tipos"><option value="Chaveiro"><option value="Decoração"><option value="Miniatura"><option value="Brinde"><option value="Peça técnica"><option value="Protótipo"><option value="Suporte"></datalist>
 
 <!-- Atualizar progresso -->
@@ -205,11 +272,25 @@
       </div>
       <small id="gInfo"></small>
     </div>
+    <div id="gCores"></div>
     <div class="atalhos" id="gAtalhos"></div>
     <div class="campo"><label for="gMsg">Recado para o cliente (opcional)</label><textarea id="gMsg" maxlength="600"></textarea><small>Deixe em branco para não mostrar recado.</small></div>
     <p class="erro" id="gErro"></p>
   </div>
   <div class="dlg-pe"><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-cor" type="button" id="btnSalvarProg">Salvar</button></div>
+</dialog>
+
+<!-- Foto em tela cheia -->
+<dialog id="dlgFoto" aria-labelledby="fTitulo">
+  <div class="foto-topo"><b id="fTitulo"></b><button class="icone-btn" type="button" data-fechar aria-label="Fechar foto"><svg class="ic"><use href="#i-x"/></svg></button></div>
+  <div class="palco-foto" id="fPalco"><img id="fImg" alt=""></div>
+  <span class="carregando-foto" id="fCarregando" hidden>Carregando a foto…</span>
+</dialog>
+
+<!-- Qual cor foi a chapa -->
+<dialog id="dlgCorChapa" aria-labelledby="tCorChapa">
+  <div class="dlg-topo"><h2 id="tCorChapa">Qual cor saiu nesta chapa?</h2><button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
+  <div class="dlg-corpo"><div class="escolher-cor" id="ccLista"></div></div>
 </dialog>
 
 <!-- Link do cliente -->
@@ -305,8 +386,8 @@
 
 <div class="aviso" id="aviso" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=6"></script>
-<script src="assets/comum.js?v=6"></script>
+<script src="config.js?v=7"></script>
+<script src="assets/comum.js?v=7"></script>
 <script>
 (() => {
   'use strict';
@@ -349,6 +430,74 @@
   const ls = { get: k => { try { return localStorage.getItem(k) || ''; } catch (_) { return ''; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (_) {} } };
   const terminoDe = p => new Date(CT.data(p.inicio).getTime() + Number(p.prazo_horas) * 3600000);
   const linkCliente = p => new URL('./p/' + encodeURIComponent(p.codigo), location.href).href;
+  // ---------- Cores ----------
+  const temCores = p => Array.isArray(p.cores) && p.cores.length > 0;
+  const copiaCores = p => (p.cores || []).map(c => ({ nome: c.nome, qtd: c.qtd, feitos: c.feitos }));
+  const NOMES_COR = [['rosa', '#F29BBF'], ['pink', '#F29BBF'], ['vermelh', '#D64545'], ['vinho', '#8E2440'], ['bordo', '#8E2440'], ['azul claro', '#8CC4F2'], ['azul bebe', '#8CC4F2'], ['celeste', '#8CC4F2'],
+    ['azul marinho', '#1F3A6B'], ['marinho', '#1F3A6B'], ['azul', '#3B7DD8'], ['verde claro', '#9AD98B'], ['verde', '#3BA55C'], ['amarel', '#F2C94C'], ['laranja', '#F2994A'], ['roxo', '#8E5BD8'], ['lilas', '#C39BD3'],
+    ['violeta', '#8E5BD8'], ['preto', '#222222'], ['branco', '#FFFFFF'], ['cinza', '#9AA0A6'], ['grafite', '#4A4F57'], ['marrom', '#8B5A2B'], ['bege', '#E8D5B0'], ['creme', '#F3E6C8'], ['dourad', '#D4AF37'],
+    ['ouro', '#D4AF37'], ['prata', '#C0C0C0'], ['prateado', '#C0C0C0'], ['bronze', '#B07A44'], ['cobre', '#B87333'], ['turquesa', '#2FB8AC'], ['ciano', '#2FB8AC'], ['magenta', '#D23C9A']];
+  function corDoNome(nome) {
+    const n = String(nome || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    if (/transparent|translucid|cristal|natural/.test(n)) return 'repeating-linear-gradient(45deg,#fff 0 3px,#dde3ea 3px 6px)';
+    const achou = NOMES_COR.find(([k]) => n.includes(k));
+    return achou ? achou[1] : 'conic-gradient(#F29BBF, #F2C94C, #3BA55C, #3B7DD8, #8E5BD8, #F29BBF)';
+  }
+  const bolinha = nome => el('span', { class: 'bolinha', style: `background:${corDoNome(nome)}`, 'aria-hidden': 'true' });
+
+  // ---------- Foto de referência ----------
+  // A foto é reduzida no próprio celular: uma versão grande (para a tela cheia) e uma miniatura quadrada (para o cartão).
+  function lerImagem(arquivo) {
+    return new Promise((ok, falha) => {
+      if (!/^image\//.test(arquivo.type || 'image/')) return falha(new Error('Escolha um arquivo de imagem.'));
+      const url = URL.createObjectURL(arquivo), img = new Image();
+      img.onload = () => { URL.revokeObjectURL(url); ok(img); };
+      img.onerror = () => { URL.revokeObjectURL(url); falha(new Error('Não consegui abrir essa imagem. Tente uma foto em JPG ou PNG.')); };
+      img.src = url;
+    });
+  }
+  function paraDados(c, qualidade) {
+    let d = c.toDataURL('image/webp', qualidade);
+    if (!d.startsWith('data:image/webp')) d = c.toDataURL('image/jpeg', qualidade);
+    return d;
+  }
+  function fotoReduzida(img, lado, qualidade) {
+    const w = img.naturalWidth, h = img.naturalHeight, k = Math.min(1, lado / Math.max(w, h));
+    const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+    const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
+    return paraDados(c, qualidade);
+  }
+  function fotoMiniatura(img, lado = 200) {
+    const w = img.naturalWidth, h = img.naturalHeight, m = Math.min(w, h);
+    const c = document.createElement('canvas'); c.width = c.height = lado;
+    const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, lado, lado);
+    ctx.drawImage(img, (w - m) / 2, (h - m) / 2, m, m, 0, 0, lado, lado);
+    return paraDados(c, .8);
+  }
+  async function prepararFoto(arquivo) {
+    const img = await lerImagem(arquivo);
+    let foto = '';
+    for (const [lado, q] of [[1600, .82], [1300, .78], [1000, .72], [800, .66]]) { foto = fotoReduzida(img, lado, q); if (foto.length <= 880000) break; }
+    if (foto.length > 880000) throw new Error('Essa foto ficou grande demais. Tente outra.');
+    return { foto, mini: fotoMiniatura(img) };
+  }
+  const fotosGrandes = new Map();
+  async function verFoto(p) {
+    const d = $('#dlgFoto'), img = $('#fImg');
+    $('#fTitulo').textContent = `nº ${p.numero} · ${p.titulo}`;
+    img.alt = `Foto de referência do pedido ${p.titulo}`;
+    img.src = p.foto_mini; img.classList.add('borrada');
+    abrir(d);
+    if (fotosGrandes.has(p.id)) { img.src = fotosGrandes.get(p.id); img.classList.remove('borrada'); return; }
+    $('#fCarregando').hidden = false;
+    try {
+      const grande = await CT.pedir('/rest/v1/rpc/ct_foto', { metodo: 'POST', comLogin: true, corpo: { p_pedido: p.id } });
+      if (grande) { fotosGrandes.set(p.id, grande); if (d.open) img.src = grande; }
+    } catch (e) { aviso('Não consegui carregar a foto em tamanho grande.', true); }
+    finally { $('#fCarregando').hidden = true; img.classList.remove('borrada'); }
+  }
+  $('#fPalco').addEventListener('click', e => { if (e.target === $('#fPalco')) fechar($('#dlgFoto')); });
+
   const fimEtapa = e => ['pronto', 'entregue', 'cancelado'].includes(e);
   const pgDe = p => CT.pagamento({ valor: p.valor, frete: p.frete, sinal_pct: p.sinal_pct, sinal_pago: p.sinal_pago, quitado: p.quitado });
   // Pedido na fila esperando o sinal: a produção ainda não começou, então não conta como atrasado.
@@ -506,7 +655,7 @@
     if (q) {
       const exatos = soNumero ? pedidos.filter(p => String(p.numero) === num) : [];
       visiveis = exatos.length ? exatos : pedidos.filter(p => (soNumero && String(p.numero).includes(num))
-        || [p.titulo, p.cliente, p.tipo].join(' ').toLowerCase().includes(q) || (fone.length >= 8 && String(p.telefone || '').includes(fone)));
+        || [p.titulo, p.cliente, p.tipo, ...(p.cores || []).map(c => c.nome)].join(' ').toLowerCase().includes(q) || (fone.length >= 8 && String(p.telefone || '').includes(fone)));
     }
     const lista = $('#lista');
     if (!lista) return;
@@ -540,18 +689,19 @@
         : [pg.temSinal ? [' · ', pg.sinalPago ? el('span', { class: 'ok', text: `sinal de ${R(pg.sinal)} recebido ✓` }) : `aguardando sinal de ${R(pg.sinal)}`] : null,
           ' · a receber ', el('b', { text: R(pg.aReceber) })]);
     return el('article', { class: 'cartao pedido', 'data-id': p.id },
-      el('div', { class: 'pedido-topo' },
+      el('div', { class: 'pedido-topo' + (p.foto_mini ? ' com-foto' : '') },
+        p.foto_mini ? el('button', { class: 'foto-pedido', type: 'button', 'aria-label': `Ver a foto do pedido ${p.titulo} em tela cheia`, title: 'Ver em tela cheia', onclick: () => verFoto(p) }, el('img', { src: p.foto_mini, alt: '' })) : null,
         el('div', {}, el('h3', { text: p.titulo }), el('div', { class: 'sub' }, el('b', { class: 'num', text: `nº ${p.numero}` }), ' · ' + [p.cliente, p.tipo, envio.nome].filter(Boolean).join(' · '))),
         el('span', { class: 'selo selo-' + selo[0] }, el('i'), selo[1])),
       el('div', { class: 'barra', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(p.quantidade), 'aria-valuenow': String(p.feitos), 'aria-label': `${pct}% pronto` }, el('span', { style: `width:${pct}%` })),
       el('div', { class: 'meta' },
         el('span', {}, el('b', { text: `${nf.format(p.feitos)} de ${nf.format(p.quantidade)}` }), ` prontos · ${pct}%`),
         emAndamento ? el('span', { class: atraso ? 'atraso' : '', text: semSinal ? 'Começa quando o sinal chegar' : atraso ? `Produção atrasada ${CT.duracao(-resta)}` : `Termina em ${CT.duracao(resta)} · ${CT.diaHora(term)}` }) : null),
-      linhaChapa(p), linhaPg,
+      linhaChapa(p), blocoCores(p, emAndamento), linhaPg,
       el('div', { class: 'acoes' },
-        emAndamento ? el('button', { class: 'btn', type: 'button', text: '+1', 'aria-label': 'Mais um pronto', onclick: () => somar(p, 1) }) : null,
-        emAndamento ? (pc ? el('button', { class: 'btn', type: 'button', text: `+1 chapa (${pc})`, 'aria-label': `Mais uma chapa: ${pc} prontos`, onclick: () => somar(p, pc) })
-                          : el('button', { class: 'btn', type: 'button', text: '+10', 'aria-label': 'Mais dez prontos', onclick: () => somar(p, 10) })) : null,
+        emAndamento && !temCores(p) ? el('button', { class: 'btn', type: 'button', text: '+1', 'aria-label': 'Mais um pronto', onclick: () => somar(p, 1) }) : null,
+        emAndamento && pc ? el('button', { class: 'btn', type: 'button', text: `+1 chapa (${pc})`, 'aria-label': `Mais uma chapa: ${pc} prontos`, onclick: () => temCores(p) ? escolherCorChapa(p, pc) : somar(p, pc) }) : null,
+        emAndamento && !pc && !temCores(p) ? el('button', { class: 'btn', type: 'button', text: '+10', 'aria-label': 'Mais dez prontos', onclick: () => somar(p, 10) }) : null,
         emAndamento ? el('button', { class: 'btn', type: 'button', text: 'Atualizar', onclick: () => abrirProgresso(p) }) : null,
         el('button', { class: 'btn', type: 'button', text: 'Link do cliente', onclick: () => abrirLink(p) }),
         el('button', { class: 'btn', type: 'button', text: 'Editar', onclick: () => abrirPedido(p) }),
@@ -561,6 +711,46 @@
         p.etapa === 'pronto' ? el('button', { class: 'btn ' + (devePagar ? '' : 'btn-cor ') + 'grande', type: 'button', text: `✓ Marcar como ${envio.final.toLowerCase()}`, onclick: () => marcarEntregue(p) }) : null));
   }
 
+  // Lista de cores no cartão: cada cor tem o seu +1 e o "✓ Todos" (concluí todas as peças desta cor).
+  function blocoCores(p, emAndamento) {
+    if (!temCores(p)) return null;
+    return el('div', { class: 'cores-pedido', role: 'list', 'aria-label': 'Cores do pedido' }, p.cores.map((c, i) => {
+      const feita = c.feitos >= c.qtd;
+      return el('div', { class: 'cor-item' + (feita ? ' feita' : ''), role: 'listitem' },
+        bolinha(c.nome), el('span', { class: 'nome', text: c.nome }),
+        el('span', { class: 'qt' }, el('b', { text: nf.format(c.feitos) }), ` de ${nf.format(c.qtd)}`),
+        feita ? el('span', { class: 'feito', text: '✓' }) : emAndamento ? el('div', { class: 'botoes' },
+          el('button', { class: 'btn', type: 'button', text: '+1', 'aria-label': `Mais um ${c.nome} pronto`, onclick: () => mudarCor(p, i, c.feitos + 1) }),
+          el('button', { class: 'btn', type: 'button', text: '✓ Todos', 'aria-label': `Concluí todos os ${c.nome}`, onclick: () => mudarCor(p, i, c.qtd) })) : el('span'),
+        el('div', { class: 'mini-barra', 'aria-hidden': 'true' }, el('span', { style: `width:${Math.floor(c.feitos / c.qtd * 100)}%` })));
+    }));
+  }
+  async function salvarCores(p, cores, texto, desfazer) {
+    const total = cores.reduce((t, c) => t + c.feitos, 0), qtd = cores.reduce((t, c) => t + c.qtd, 0);
+    const campos = { cores };
+    if (p.etapa === 'fila' && total > 0) campos.etapa = 'producao';
+    if (p.etapa === 'pronto' && total < qtd) campos.etapa = 'producao';
+    try {
+      const novo = await salvarPedido(p.id, campos);
+      desenhar();
+      aviso(novo.etapa === 'pronto' && p.etapa !== 'pronto' ? `${novo.titulo}: todas as cores prontas! O cliente já vê "Pronto".` : texto(novo),
+        false, desfazer ? { rotulo: 'Desfazer', fn: () => salvarPedido(p.id, { cores: desfazer, etapa: p.etapa }).then(desenhar, e => aviso(erroAmigavel(e), true)) } : undefined);
+    } catch (e) { aviso(erroAmigavel(e), true); }
+  }
+  function mudarCor(p, i, feitos) {
+    const antes = copiaCores(p), cores = copiaCores(p), c = cores[i];
+    c.feitos = Math.max(0, Math.min(c.qtd, feitos));
+    if (c.feitos === antes[i].feitos) return;
+    salvarCores(p, cores, novo => `${c.nome}: ${nf.format(c.feitos)} de ${nf.format(c.qtd)}. Pedido: ${nf.format(novo.feitos)} de ${nf.format(novo.quantidade)}.`, antes);
+  }
+  function escolherCorChapa(p, pc) {
+    const faltando = p.cores.map((c, i) => [c, i]).filter(([c]) => c.feitos < c.qtd);
+    if (!faltando.length) return aviso('Todas as cores já estão prontas.');
+    $('#tCorChapa').textContent = `Qual cor saiu nesta chapa? (+${pc})`;
+    $('#ccLista').replaceChildren(...faltando.map(([c, i]) => el('button', { class: 'btn', type: 'button', onclick: () => { fechar($('#dlgCorChapa')); mudarCor(p, i, c.feitos + pc); } },
+      bolinha(c.nome), c.nome, el('small', { text: `faltam ${nf.format(c.qtd - c.feitos)}` }))));
+    abrir($('#dlgCorChapa'));
+  }
   async function somar(p, n) {
     const feitos = Math.min(p.quantidade, p.feitos + n);
     if (feitos === p.feitos) return aviso('Este pedido já está com todas as peças prontas.');
@@ -571,9 +761,10 @@
     } catch (e) { aviso(erroAmigavel(e), true); }
   }
   async function marcarPronto(p) {
-    const antes = { feitos: p.feitos, etapa: p.etapa };
+    const antes = temCores(p) ? { cores: copiaCores(p), etapa: p.etapa } : { feitos: p.feitos, etapa: p.etapa };
+    const agora = temCores(p) ? { cores: copiaCores(p).map(c => Object.assign(c, { feitos: c.qtd })), etapa: 'pronto' } : { feitos: p.quantidade, etapa: 'pronto' };
     try {
-      await salvarPedido(p.id, { feitos: p.quantidade, etapa: 'pronto' });
+      await salvarPedido(p.id, agora);
       desenhar();
       aviso(`${p.titulo}: marcado como pronto.`, false, { rotulo: 'Desfazer', fn: () => salvarPedido(p.id, antes).then(desenhar, e => aviso(erroAmigavel(e), true)) });
     } catch (e) { aviso(erroAmigavel(e), true); }
@@ -642,6 +833,60 @@
     d.textContent = t; d.className = alerta ? 'dica-alerta' : '';
   }
   $('#pTel').addEventListener('input', dicaFone);
+  // ---------- Formulário: cores ----------
+  function linhaCor(c = {}) {
+    const nome = el('input', { class: 'c-nome', list: 'sugCores', maxlength: '40', placeholder: 'Ex.: Rosa', value: c.nome || '', 'aria-label': 'Cor ou variação' });
+    const qtd = el('input', { class: 'c-qtd', type: 'number', inputmode: 'numeric', min: '1', step: '1', placeholder: '0', value: c.qtd || '', 'aria-label': 'Quantidade desta cor' });
+    const feitos = el('input', { class: 'c-feitos', type: 'number', inputmode: 'numeric', min: '0', step: '1', placeholder: '0', value: c.feitos || '', 'aria-label': 'Prontos desta cor' });
+    const bol = bolinha(c.nome);
+    const linha = el('div', { class: 'cor-linha' }, bol, nome, qtd, feitos,
+      el('button', { class: 'icone-btn', type: 'button', 'aria-label': 'Tirar esta cor', title: 'Tirar esta cor', onclick: () => { linha.remove(); somarCoresForm(); } }, svg('i-x')));
+    nome.addEventListener('input', () => { bol.style.background = corDoNome(nome.value); });
+    [qtd, feitos].forEach(x => x.addEventListener('input', somarCoresForm));
+    return linha;
+  }
+  // Lê as cores do formulário. Linha vazia é ignorada; linha pela metade dá erro.
+  function lerCores() {
+    const cores = [];
+    for (const l of $('#pCores').children) {
+      const nome = l.querySelector('.c-nome').value.trim(), qtd = inteiro(l.querySelector('.c-qtd').value), feitos = inteiro(l.querySelector('.c-feitos').value) || 0;
+      if (!nome && !qtd) continue;
+      if (!nome) return { erro: 'Dê um nome para cada cor (ou tire a linha).', campo: l.querySelector('.c-nome') };
+      if (!(qtd >= 1)) return { erro: `Coloque a quantidade de "${nome}".`, campo: l.querySelector('.c-qtd') };
+      if (!Number.isInteger(feitos) || feitos < 0 || feitos > qtd) return { erro: `Os prontos de "${nome}" precisam ficar entre 0 e ${qtd}.`, campo: l.querySelector('.c-feitos') };
+      cores.push({ nome, qtd, feitos });
+    }
+    return { cores };
+  }
+  // Com cores, a quantidade total e os prontos são a soma das cores (os campos ficam travados).
+  function somarCoresForm() {
+    let q = 0, f = 0, n = 0;
+    for (const l of $('#pCores').children) { const a = inteiro(l.querySelector('.c-qtd').value), b = inteiro(l.querySelector('.c-feitos').value); if (a > 0) { q += a; n++; } if (b > 0) f += b; }
+    const usa = n > 0;
+    $('#pQtd').readOnly = usa; $('#pFeitos').readOnly = usa; $('#pQtdDica').hidden = !usa;
+    if (usa) { $('#pQtd').value = q; $('#pFeitos').value = Math.min(f, q); }
+    if ($('#pPorChapa').value) calcularChapas('qtd');
+  }
+  $('#pCorMais').addEventListener('click', () => { const l = linhaCor(); $('#pCores').append(l); l.querySelector('.c-nome').focus(); });
+  $('#pCoresBox').addEventListener('toggle', () => { if ($('#pCoresBox').open && !$('#pCores').children.length) { $('#pCores').append(linhaCor(), linhaCor()); } });
+
+  // ---------- Formulário: foto ----------
+  let fotoForm = { mudou: false, foto: null, mini: '' };
+  function desenharFotoForm() {
+    const box = $('#pFotoPrevia');
+    box.replaceChildren(fotoForm.mini ? el('img', { src: fotoForm.mini, alt: 'Foto de referência' }) : 'Sem foto');
+    $('#pFotoTirar').hidden = !fotoForm.mini;
+    $('#pFotoEscolher').textContent = fotoForm.mini ? 'Trocar foto' : 'Escolher foto';
+  }
+  $('#pFoto').addEventListener('change', async e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    $('#pFotoPrevia').textContent = 'Preparando…';
+    try { const r = await prepararFoto(f); fotoForm = { mudou: true, foto: r.foto, mini: r.mini }; $('#pErro').textContent = ''; }
+    catch (err) { $('#pErro').textContent = err.message; }
+    desenharFotoForm();
+  });
+  $('#pFotoTirar').addEventListener('click', () => { fotoForm = { mudou: true, foto: '', mini: '' }; $('#pFoto').value = ''; desenharFotoForm(); });
+
   function abrirPedido(p) {
     editando = p || null;
     $('#tPedido').textContent = p ? 'Editar pedido' : 'Novo pedido';
@@ -662,6 +907,11 @@
     $('#pNChapas').value = p && p.chapas ? p.chapas : ''; $('#pNChapas').dataset.auto = '';
     $('#pHChapa').value = p && p.horas_chapa ? String(p.horas_chapa) : '';
     $('#pChapas').open = Boolean(p && p.chapas);
+    $('#pCores').replaceChildren(...(p && temCores(p) ? p.cores.map(c => linhaCor(c)) : []));
+    $('#pCoresBox').open = Boolean(p && temCores(p));
+    somarCoresForm();
+    fotoForm = { mudou: false, foto: null, mini: p ? p.foto_mini || '' : '' };
+    desenharFotoForm(); $('#pFoto').value = '';
     $('#pConta').textContent = 'Preencha objetos por chapa, quantas chapas e horas por chapa para calcular o tempo total.';
     $('#pInicio').value = paraLocal(p ? CT.data(p.inicio) : new Date());
     $('#pFeitos').value = p ? p.feitos : 0;
@@ -706,6 +956,10 @@
     const erro = (campo, t) => { $('#pErro').textContent = t; if (campo) { $(campo).classList.add('invalido'); $(campo).focus(); } };
     document.querySelectorAll('#dlgPedido .invalido').forEach(n => n.classList.remove('invalido'));
     const titulo = $('#pTitulo').value.trim();
+    const lidas = lerCores();
+    if (lidas.erro) { $('#pCoresBox').open = true; erro(null, lidas.erro); lidas.campo.classList.add('invalido'); lidas.campo.focus(); return; }
+    const cores = lidas.cores.length ? lidas.cores : null;
+    if (cores) { $('#pQtd').value = cores.reduce((t, c) => t + c.qtd, 0); $('#pFeitos').value = cores.reduce((t, c) => t + c.feitos, 0); }
     const qtd = inteiro($('#pQtd').value), feitos = inteiro($('#pFeitos').value) || 0;
     const prazo = numero($('#pPrazo').value);
     const tel = CT.celular($('#pTel').value), atend = CT.celular($('#pAtend').value);
@@ -734,7 +988,7 @@
       envio: $('#pEnvio').value, quantidade: qtd, feitos, etapa,
       inicio: new Date($('#pInicio').value || Date.now()).toISOString(), prazo_horas: Math.round(horas * 100) / 100,
       chapas: nch || null, por_chapa: pc || null, horas_chapa: hch || null,
-      mensagem: $('#pMsg').value.trim(),
+      mensagem: $('#pMsg').value.trim(), cores,
       valor: pgF.valor, frete: temValor ? pgF.frete : null, sinal_pct: temValor ? pgF.sinal : null,
       sinal_pago: sinalPago, quitado: temValor && Boolean(editando) && $('#pQuitado').checked
     };
@@ -743,11 +997,21 @@
     if (atend) ls.set(ATEND_KEY, atend);
     const btn = $('#btnSalvarPedido'); btn.disabled = true;
     try {
-      const novo = await salvarPedido(editando && editando.id, campos);
+      let novo = await salvarPedido(editando && editando.id, campos);
+      // A foto vai depois do pedido (precisa do pedido salvo). Se falhar, o pedido continua salvo.
+      let falhouFoto = false;
+      if (fotoForm.mudou) {
+        try {
+          await CT.pedir('/rest/v1/rpc/ct_salvar_foto', { metodo: 'POST', comLogin: true, corpo: { p_pedido: novo.id, p_foto: fotoForm.foto || '', p_mini: fotoForm.mini || null } });
+          novo = Object.assign(novo, { foto_mini: fotoForm.mini || null });
+          if (fotoForm.foto) fotosGrandes.set(novo.id, fotoForm.foto); else fotosGrandes.delete(novo.id);
+        } catch (e) { falhouFoto = true; }
+      }
       fechar($('#dlgPedido'));
       desenhar();
       if (!editando) abrirLink(novo, true);
       else aviso('Pedido atualizado. O cliente já vê pelo mesmo link.');
+      if (falhouFoto) setTimeout(() => aviso('O pedido foi salvo, mas a foto não. Tente de novo em "Editar".', true), editando ? 0 : 400);
     } catch (e) { erro(null, erroAmigavel(e)); }
     finally { btn.disabled = false; }
   });
@@ -762,21 +1026,38 @@
   });
 
   /* ---------- progresso ---------- */
+  function lerCoresProgresso() {
+    return copiaCores(progAlvo).map((c, i) => { const v = Math.floor(Number(($(`#gCor${i}`) || {}).value)); return Object.assign(c, { feitos: Number.isFinite(v) ? Math.max(0, Math.min(c.qtd, v)) : c.feitos }); });
+  }
   function infoProgresso() {
-    const p = progAlvo, f = Math.max(0, Math.min(p.quantidade, Math.floor(Number($('#gFeitos').value) || 0)));
+    const p = progAlvo;
+    if (temCores(p)) $('#gFeitos').value = lerCoresProgresso().reduce((t, c) => t + c.feitos, 0);
+    const f = Math.max(0, Math.min(p.quantidade, Math.floor(Number($('#gFeitos').value) || 0)));
     $('#gInfo').textContent = `de ${nf.format(p.quantidade)} · ${Math.floor(f / p.quantidade * 100)}% · faltam ${nf.format(p.quantidade - f)}` + (f >= p.quantidade ? ' · vai ficar "Pronto"' : '');
   }
   function abrirProgresso(p) {
     progAlvo = p;
-    $('#gTitulo').textContent = `${p.titulo}: quantos já estão prontos?`;
     $('#gFeitos').value = p.feitos; $('#gFeitos').max = p.quantidade;
     $('#gMsg').value = p.mensagem || '';
     $('#gErro').textContent = '';
     const pc = porChapa(p);
-    $('#gAtalhos').replaceChildren(
+    const comCores = temCores(p);
+    $('#gFeitos').readOnly = comCores; $('#gMais').hidden = comCores; $('#gMenos').hidden = comCores;
+    $('#gTitulo').textContent = comCores ? `${p.titulo}: quantos de cada cor já estão prontos?` : `${p.titulo}: quantos já estão prontos?`;
+    $('#gCores').replaceChildren(...(!comCores ? [] : p.cores.map((c, i) => {
+      const campo = el('input', { id: `gCor${i}`, type: 'number', inputmode: 'numeric', min: '0', max: String(c.qtd), step: '1', value: String(c.feitos), 'aria-label': `Prontos de ${c.nome}` });
+      const por = n => { campo.value = Math.max(0, Math.min(c.qtd, (Math.floor(Number(campo.value)) || 0) + n)); infoProgresso(); };
+      campo.addEventListener('input', infoProgresso);
+      return el('div', { class: 'g-cor' }, bolinha(c.nome), el('div', { class: 'rot' }, c.nome, el('small', { text: `de ${nf.format(c.qtd)}` })),
+        el('div', { class: 'passo' },
+          el('button', { class: 'icone-btn', type: 'button', text: '−', 'aria-label': `Menos um ${c.nome}`, onclick: () => por(-1) }), campo,
+          el('button', { class: 'icone-btn', type: 'button', text: '+', 'aria-label': `Mais um ${c.nome}`, onclick: () => por(1) }),
+          el('button', { class: 'btn', type: 'button', text: '✓ Todos', onclick: () => { campo.value = c.qtd; infoProgresso(); } })));
+    })));
+    $('#gAtalhos').replaceChildren(...(comCores ? [] : [
       ...(pc ? [el('button', { class: 'btn', type: 'button', text: `+1 chapa (${pc})`, onclick: () => ajustar(pc) })] : []),
       ...[5, 10].filter(n => n < p.quantidade && n !== pc).map(n => el('button', { class: 'btn', type: 'button', text: `+${n}`, onclick: () => ajustar(n) })),
-      el('button', { class: 'btn', type: 'button', text: 'Tudo pronto', onclick: () => { $('#gFeitos').value = p.quantidade; infoProgresso(); } }));
+      el('button', { class: 'btn', type: 'button', text: 'Tudo pronto', onclick: () => { $('#gFeitos').value = p.quantidade; infoProgresso(); } })]));
     infoProgresso();
     abrir($('#dlgProgresso'));
   }
@@ -787,7 +1068,7 @@
   $('#btnSalvarProg').addEventListener('click', async () => {
     const p = progAlvo, f = Math.floor(Number($('#gFeitos').value));
     if (!Number.isInteger(f) || f < 0 || f > p.quantidade) { $('#gErro').textContent = `Use um número entre 0 e ${p.quantidade}.`; return; }
-    const campos = { feitos: f, mensagem: $('#gMsg').value.trim() };
+    const campos = temCores(p) ? { cores: lerCoresProgresso(), mensagem: $('#gMsg').value.trim() } : { feitos: f, mensagem: $('#gMsg').value.trim() };
     if (p.etapa === 'fila' && f > 0) campos.etapa = 'producao';
     if (p.etapa === 'pronto' && f < p.quantidade) campos.etapa = 'producao';
     const btn = $('#btnSalvarProg'); btn.disabled = true;

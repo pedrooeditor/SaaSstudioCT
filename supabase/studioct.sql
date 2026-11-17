@@ -474,6 +474,88 @@ revoke all on function public.ct_pedido_publico(text, text) from public;
 grant execute on function public.ct_pedido_publico(text, text) to anon, authenticated;
 
 -- =====================================================================
+-- Versão 6: cores (ou outras variações) e foto de referência do pedido.
+-- Só o estúdio vê: a função do cliente (ct_pedido_publico) não devolve nenhum dos dois.
+-- =====================================================================
+alter table public.ct_pedidos add column if not exists cores jsonb;
+alter table public.ct_pedidos add column if not exists foto_mini text;
+alter table public.ct_pedidos drop constraint if exists ct_cores_validas;
+alter table public.ct_pedidos add constraint ct_cores_validas check (
+  cores is null or (jsonb_typeof(cores) = 'array' and jsonb_array_length(cores) between 1 and 40));
+alter table public.ct_pedidos drop constraint if exists ct_foto_mini_valida;
+alter table public.ct_pedidos add constraint ct_foto_mini_valida check (
+  foto_mini is null or (char_length(foto_mini) <= 60000 and foto_mini ~ '^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$'));
+
+-- Com cores, a quantidade e os prontos do pedido são sempre a soma das cores.
+-- O nome do gatilho começa com "ct_a_" para rodar antes dos outros (que olham feitos e quantidade).
+create or replace function public.ct_somar_cores()
+returns trigger language plpgsql as $$
+declare c jsonb; lista jsonb := '[]'::jsonb; nome text; q integer; f integer; tq integer := 0; tf integer := 0;
+begin
+  if new.cores is null or jsonb_typeof(new.cores) <> 'array' or jsonb_array_length(new.cores) = 0 then
+    new.cores := null;
+    return new;
+  end if;
+  for c in select value from jsonb_array_elements(new.cores) loop
+    nome := left(btrim(coalesce(c ->> 'nome', '')), 40);
+    q := floor(coalesce((c ->> 'qtd')::numeric, 0));
+    f := floor(coalesce((c ->> 'feitos')::numeric, 0));
+    if nome = '' or q < 1 or q > 1000000 then
+      raise exception 'Cada cor precisa de um nome e de uma quantidade maior que zero' using errcode = '23514';
+    end if;
+    f := greatest(0, least(q, f));
+    lista := lista || jsonb_build_array(jsonb_build_object('nome', nome, 'qtd', q, 'feitos', f));
+    tq := tq + q; tf := tf + f;
+  end loop;
+  new.cores := lista;
+  new.quantidade := tq;
+  new.feitos := tf;
+  return new;
+end;
+$$;
+drop trigger if exists ct_a_cores on public.ct_pedidos;
+create trigger ct_a_cores before insert or update on public.ct_pedidos for each row execute function public.ct_somar_cores();
+
+-- Foto de referência: a original fica numa tabela à parte (só é baixada quando você abre a foto);
+-- a miniatura fica no próprio pedido, para aparecer na lista.
+create table if not exists public.ct_pedido_fotos (
+  pedido_id uuid primary key references public.ct_pedidos (id) on delete cascade,
+  foto text not null check (char_length(foto) <= 900000 and foto ~ '^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$'),
+  atualizado_em timestamptz not null default now()
+);
+alter table public.ct_pedido_fotos enable row level security;
+revoke all on public.ct_pedido_fotos from anon, authenticated;
+
+-- Salva (ou, com p_foto vazio, apaga) a foto de um pedido do próprio estúdio.
+create or replace function public.ct_salvar_foto(p_pedido uuid, p_foto text, p_mini text)
+returns void language plpgsql security definer set search_path = public, extensions as $$
+begin
+  if not exists (select 1 from ct_pedidos where id = p_pedido and estudio_id = ct_meu_estudio()) then
+    raise exception 'Sem permissão' using errcode = '42501';
+  end if;
+  if coalesce(p_foto, '') = '' then
+    delete from ct_pedido_fotos where pedido_id = p_pedido;
+    update ct_pedidos set foto_mini = null where id = p_pedido;
+  else
+    insert into ct_pedido_fotos (pedido_id, foto) values (p_pedido, p_foto)
+      on conflict (pedido_id) do update set foto = excluded.foto, atualizado_em = now();
+    update ct_pedidos set foto_mini = p_mini where id = p_pedido;
+  end if;
+end;
+$$;
+revoke all on function public.ct_salvar_foto(uuid, text, text) from public;
+grant execute on function public.ct_salvar_foto(uuid, text, text) to authenticated;
+
+-- Foto em tamanho original (só do próprio estúdio).
+create or replace function public.ct_foto(p_pedido uuid)
+returns text language sql stable security definer set search_path = public, extensions as $$
+  select f.foto from ct_pedido_fotos f join ct_pedidos p on p.id = f.pedido_id
+  where f.pedido_id = p_pedido and p.estudio_id = ct_meu_estudio();
+$$;
+revoke all on function public.ct_foto(uuid) from public;
+grant execute on function public.ct_foto(uuid) to authenticated;
+
+-- =====================================================================
 -- ADMINISTRADORES: troque pelo seu e-mail (em minúsculas).
 -- =====================================================================
 insert into public.ct_admins (email) values ('psimoes2704@gmail.com') on conflict do nothing;
