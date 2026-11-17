@@ -156,24 +156,6 @@ create policy "admin eventos" on public.ct_eventos for select to authenticated u
 drop policy if exists "admin config" on public.ct_config;
 create policy "admin config" on public.ct_config for all to authenticated using (public.ct_eh_admin()) with check (public.ct_eh_admin());
 
--- O que o cliente vê, pelo código secreto do link. Nada de telefone, valor ou notas internas.
-create or replace function public.ct_pedido_publico(p_codigo text)
-returns json language sql stable security definer set search_path = public, extensions as $$
-  select case when p.id is null then null else json_build_object(
-    'titulo', p.titulo, 'tipo', p.tipo, 'cliente', split_part(btrim(p.cliente), ' ', 1),
-    'quantidade', p.quantidade, 'feitos', p.feitos, 'etapa', p.etapa, 'envio', p.envio,
-    'termino', p.inicio + make_interval(secs => p.prazo_horas * 3600),
-    'mensagem', p.mensagem, 'atualizado_em', p.atualizado_em, 'agora', now(),
-    'whatsapp', coalesce(nullif(p.whatsapp_atendimento, ''), (select c.whatsapp from ct_config c where c.id = 1), ''),
-    -- No ritmo atual (só depois de 1 h de produção): horas para terminar o que falta.
-    'ritmo_horas', case when p.etapa = 'producao' and p.feitos > 0 and p.feitos < p.quantidade and now() - p.inicio > interval '1 hour'
-      then round(((p.quantidade - p.feitos) / (p.feitos / (extract(epoch from now() - p.inicio) / 3600)))::numeric, 2) end
-  ) end
-  from (select 1) x left join ct_pedidos p on p.codigo = p_codigo and char_length(p_codigo) >= 12;
-$$;
-revoke all on function public.ct_pedido_publico(text) from public;
-grant execute on function public.ct_pedido_publico(text) to anon, authenticated;
-
 -- =====================================================================
 -- Versão 3: vários estúdios no mesmo sistema.
 -- Cada estúdio tem nome, logo, cor, WhatsApp e prazos próprios, e só vê os próprios pedidos.
@@ -401,8 +383,10 @@ begin
   end loop;
 end $$;
 
--- O que o cliente vê agora inclui a marca do estúdio do pedido.
-create or replace function public.ct_pedido_publico(p_codigo text)
+-- O que o cliente vê, pelo código secreto do link: nada de telefone ou dados internos, e com a marca do estúdio.
+-- A página manda o md5 da logo que já tem (p_logo_tenho) para não baixar a mesma logo a cada atualização.
+drop function if exists public.ct_pedido_publico(text);
+create or replace function public.ct_pedido_publico(p_codigo text, p_logo_tenho text default null)
 returns json language sql stable security definer set search_path = public, extensions as $$
   select case when p.id is null then null else json_build_object(
     'titulo', p.titulo, 'tipo', p.tipo, 'cliente', split_part(btrim(p.cliente), ' ', 1),
@@ -410,16 +394,18 @@ returns json language sql stable security definer set search_path = public, exte
     'termino', p.inicio + make_interval(secs => p.prazo_horas * 3600),
     'mensagem', p.mensagem, 'atualizado_em', p.atualizado_em, 'agora', now(),
     'whatsapp', coalesce(nullif(p.whatsapp_atendimento, ''), nullif(e.whatsapp, ''), ''),
-    'estudio', json_build_object('nome', e.nome, 'logo', e.logo, 'cor', e.cor,
-      'prazo_entrega', e.prazo_entrega, 'prazo_correios', e.prazo_correios),
+    'estudio', json_build_object('nome', e.nome, 'cor', e.cor,
+      'logo', case when p_logo_tenho is not null and md5(e.logo) = p_logo_tenho then null else e.logo end,
+      'logo_md5', md5(e.logo), 'prazo_entrega', e.prazo_entrega, 'prazo_correios', e.prazo_correios),
+    -- No ritmo atual (só depois de 1 h de produção): horas para terminar o que falta.
     'ritmo_horas', case when p.etapa = 'producao' and p.feitos > 0 and p.feitos < p.quantidade and now() - p.inicio > interval '1 hour'
       then round(((p.quantidade - p.feitos) / (p.feitos / (extract(epoch from now() - p.inicio) / 3600)))::numeric, 2) end
   ) end
   from (select 1) x left join ct_pedidos p on p.codigo = p_codigo and char_length(p_codigo) >= 12
   left join ct_estudios e on e.id = p.estudio_id;
 $$;
-revoke all on function public.ct_pedido_publico(text) from public;
-grant execute on function public.ct_pedido_publico(text) to anon, authenticated;
+revoke all on function public.ct_pedido_publico(text, text) from public;
+grant execute on function public.ct_pedido_publico(text, text) to anon, authenticated;
 
 -- =====================================================================
 -- ADMINISTRADORES: troque pelo seu e-mail (em minúsculas).

@@ -9,7 +9,7 @@
 <!-- Funciona tanto em /?p=CODIGO quanto no link curto /p/CODIGO (servido pelo 404.html). -->
 <script>(function () { var m = location.pathname.match(/^(.*?\/)p\/[^\/]+\/?$/); if (m) document.write('<base href="' + m[1].replace(/"/g, '') + '">'); })();</script>
 <link rel="icon" type="image/svg+xml" href="assets/icone.svg">
-<link rel="stylesheet" href="assets/estilo.css?v=3">
+<link rel="stylesheet" href="assets/estilo.css?v=4">
 <style>
   .pagina { max-width: 560px; margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom)); display: grid; gap: 14px; }
   .topo { display: grid; justify-items: center; gap: 4px; padding: 6px 0 2px; text-align: center; }
@@ -70,8 +70,8 @@
 </main>
 <noscript><p style="text-align:center;padding:20px">Ative o JavaScript para acompanhar o pedido.</p></noscript>
 
-<script src="config.js?v=3"></script>
-<script src="assets/comum.js?v=3"></script>
+<script src="config.js?v=4"></script>
+<script src="assets/comum.js?v=4"></script>
 <script>
 (() => {
   'use strict';
@@ -81,7 +81,7 @@
   const codigo = decodeURIComponent((curto && curto[1]) || new URLSearchParams(location.search).get('p') || location.hash.replace(/^#/, '') || '').trim();
   let ultimo = null, diferencaRelogio = 0;
 
-  let estudio = null;
+  let estudio = null, logoGuardada = { md5: null, logo: '' };
   const topo = () => el('header', { class: 'topo' },
     estudio ? CT.logoEstudio(estudio, 104) : null,
     estudio && !/^assets\//.test(estudio.logo || '') ? el('strong', { text: estudio.nome }) : null,
@@ -173,7 +173,14 @@
     if (!CT.configurado) return semPedido('Página em configuração', 'Estamos configurando o acompanhamento.');
     if (codigo.length < 12) return semPedido('Link incompleto', 'Confira se você abriu o link inteiro que enviamos.');
     try {
-      const p = await CT.pedir('/rest/v1/rpc/ct_pedido_publico', { metodo: 'POST', corpo: { p_codigo: codigo } });
+      const corpo = { p_codigo: codigo };
+      if (logoGuardada.md5) corpo.p_logo_tenho = logoGuardada.md5;
+      const p = await CT.pedir('/rest/v1/rpc/ct_pedido_publico', { metodo: 'POST', corpo });
+      if (p && p.estudio) {
+        // A logo só vem do servidor na primeira vez (ou quando o estúdio troca de logo).
+        if (p.estudio.logo == null && p.estudio.logo_md5 === logoGuardada.md5) p.estudio.logo = logoGuardada.logo;
+        else logoGuardada = { md5: p.estudio.logo_md5 || null, logo: p.estudio.logo || '' };
+      }
       if (!p) return semPedido('Pedido não encontrado', 'Este link não corresponde a nenhum pedido. Peça o link de novo para a gente.');
       diferencaRelogio = CT.data(p.agora).getTime() - Date.now();
       desenhar(p);

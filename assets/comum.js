@@ -163,9 +163,13 @@
     if (meta) meta.setAttribute('content', misturar(cor, '#FFFFFF', .9));
   }
   // Logo do estúdio (ou a inicial do nome, quando não tem logo).
+  // Logos que são arquivos do site: a proporção já conhecida reserva o espaço antes de a imagem chegar.
+  const PROPORCAO_LOGO = { 'assets/logo.webp': '357 / 420' };
   function logoEstudio(estudio, tamanho, classe) {
     const e = estudio || {};
-    if (e.logo) return el('img', { class: classe || '', src: e.logo, alt: e.nome || '', style: `width:${tamanho}px;height:auto;max-height:${Math.round(tamanho * 1.25)}px;object-fit:contain` });
+    const prop = PROPORCAO_LOGO[e.logo];
+    if (e.logo) return el('img', { class: classe || '', src: e.logo, alt: e.nome || '', decoding: 'async',
+      style: `width:${tamanho}px;height:auto;max-height:${Math.round(tamanho * 1.25)}px;object-fit:contain` + (prop ? `;aspect-ratio:${prop}` : '') });
     const inicial = String(e.nome || '?').trim().charAt(0).toUpperCase() || '?';
     return el('span', { class: 'inicial ' + (classe || ''), 'aria-hidden': 'true', style: `width:${tamanho}px;height:${tamanho}px;font-size:${Math.round(tamanho * .45)}px`, text: inicial });
   }
