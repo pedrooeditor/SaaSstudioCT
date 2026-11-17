@@ -173,6 +173,14 @@ create table if not exists public.ct_estudios (
   ativo boolean not null default true,
   criado_em timestamptz not null default now()
 );
+-- Pagamento: chave Pix que o cliente vê e o sinal cobrado antes de começar (0 = não cobra sinal).
+alter table public.ct_estudios add column if not exists pix_chave text not null default '';
+alter table public.ct_estudios add column if not exists pix_nome text not null default '';
+alter table public.ct_estudios add column if not exists sinal_pct integer not null default 0;
+alter table public.ct_estudios drop constraint if exists ct_estudio_pagamento;
+alter table public.ct_estudios add constraint ct_estudio_pagamento check (
+  char_length(pix_chave) <= 140 and char_length(pix_nome) <= 80 and sinal_pct between 0 and 100);
+
 -- Quem entra no painel de cada estúdio (pelo e-mail da conta).
 create table if not exists public.ct_membros (
   email text primary key check (email = lower(email) and email ~ '^[^\s@]+@[^\s@]+\.[^\s@]+$'),
@@ -236,7 +244,8 @@ create policy "estudio eventos" on public.ct_eventos for select to authenticated
 -- Dados do estúdio no formato que as páginas usam.
 create or replace function public.ct_estudio_json(e public.ct_estudios) returns json language sql stable as $$
   select json_build_object('id', e.id, 'nome', e.nome, 'whatsapp', e.whatsapp, 'cor', e.cor, 'logo', e.logo,
-    'prazo_entrega', e.prazo_entrega, 'prazo_correios', e.prazo_correios, 'ativo', e.ativo);
+    'prazo_entrega', e.prazo_entrega, 'prazo_correios', e.prazo_correios, 'ativo', e.ativo,
+    'pix_chave', e.pix_chave, 'pix_nome', e.pix_nome, 'sinal_pct', e.sinal_pct);
 $$;
 
 -- Quem sou eu: estúdio (mesmo pausado, para avisar) e se sou dono da plataforma.
@@ -249,20 +258,40 @@ revoke all on function public.ct_minha_conta() from public;
 grant execute on function public.ct_minha_conta() to authenticated;
 
 -- Configurações do estúdio (qualquer pessoa do estúdio pode mudar). Logo null = mantém a atual.
+drop function if exists public.ct_salvar_estudio(text, text, text, text, text, text);
 create or replace function public.ct_salvar_estudio(p_nome text, p_whatsapp text, p_cor text, p_logo text,
-  p_prazo_entrega text, p_prazo_correios text)
+  p_prazo_entrega text, p_prazo_correios text, p_pix_chave text default null, p_pix_nome text default null, p_sinal_pct integer default null)
 returns json language plpgsql security definer set search_path = public, extensions as $$
 declare e ct_estudios; meu uuid := ct_meu_estudio();
 begin
   if meu is null then raise exception 'Sem permissão' using errcode = '42501'; end if;
   update ct_estudios set nome = btrim(p_nome), whatsapp = coalesce(p_whatsapp, ''), cor = upper(p_cor),
-    logo = coalesce(p_logo, logo), prazo_entrega = btrim(p_prazo_entrega), prazo_correios = btrim(p_prazo_correios)
+    logo = coalesce(p_logo, logo), prazo_entrega = btrim(p_prazo_entrega), prazo_correios = btrim(p_prazo_correios),
+    pix_chave = coalesce(btrim(p_pix_chave), pix_chave), pix_nome = coalesce(btrim(p_pix_nome), pix_nome),
+    sinal_pct = coalesce(p_sinal_pct, sinal_pct)
   where id = meu returning * into e;
   return ct_estudio_json(e);
 end;
 $$;
-revoke all on function public.ct_salvar_estudio(text, text, text, text, text, text) from public;
-grant execute on function public.ct_salvar_estudio(text, text, text, text, text, text) to authenticated;
+revoke all on function public.ct_salvar_estudio(text, text, text, text, text, text, text, text, integer) from public;
+grant execute on function public.ct_salvar_estudio(text, text, text, text, text, text, text, text, integer) to authenticated;
+
+-- A própria pessoa cria o estúdio dela depois de confirmar o e-mail (uma conta = um estúdio).
+create or replace function public.ct_criar_meu_estudio(p_nome text, p_whatsapp text default '')
+returns json language plpgsql security definer set search_path = public, extensions as $$
+declare novo ct_estudios; em text := ct_email();
+begin
+  if em = '' then raise exception 'Sem permissão' using errcode = '42501'; end if;
+  if exists (select 1 from ct_membros where email = em) then
+    raise exception 'Esta conta já está em um estúdio' using errcode = '23505';
+  end if;
+  insert into ct_estudios (nome, whatsapp) values (btrim(p_nome), coalesce(p_whatsapp, '')) returning * into novo;
+  insert into ct_membros (email, estudio_id) values (em, novo.id);
+  return ct_estudio_json(novo);
+end;
+$$;
+revoke all on function public.ct_criar_meu_estudio(text, text) from public;
+grant execute on function public.ct_criar_meu_estudio(text, text) to authenticated;
 
 create or replace function public.ct_enviar_sugestao(p_texto text)
 returns void language plpgsql security definer set search_path = public, extensions as $$
@@ -404,6 +433,19 @@ $$;
 drop trigger if exists ct_mesmo_estudio on public.ct_pedidos;
 create trigger ct_mesmo_estudio before update on public.ct_pedidos for each row execute function public.ct_mesmo_estudio();
 
+-- =====================================================================
+-- Versão 5: pagamento. O valor é opcional: sem valor, o cliente não vê nada de pagamento.
+-- Com sinal, o pedido espera o sinal para começar; o restante (mais o frete) é pago quando fica pronto.
+-- O dinheiro vai direto para a chave Pix do estúdio; aqui só fica registrado o que já foi recebido.
+-- =====================================================================
+alter table public.ct_pedidos add column if not exists frete numeric;
+alter table public.ct_pedidos add column if not exists sinal_pct integer;
+alter table public.ct_pedidos add column if not exists sinal_pago boolean not null default false;
+alter table public.ct_pedidos add column if not exists quitado boolean not null default false;
+alter table public.ct_pedidos drop constraint if exists ct_pagamento_valido;
+alter table public.ct_pedidos add constraint ct_pagamento_valido check (
+  (frete is null or (frete >= 0 and frete < 100000000)) and (sinal_pct is null or sinal_pct between 0 and 100));
+
 -- O que o cliente vê, pelo código secreto do link: nada de telefone ou dados internos, e com a marca do estúdio.
 -- A página manda o md5 da logo que já tem (p_logo_tenho) para não baixar a mesma logo a cada atualização.
 drop function if exists public.ct_pedido_publico(text);
@@ -415,6 +457,9 @@ returns json language sql stable security definer set search_path = public, exte
     'termino', p.inicio + make_interval(secs => p.prazo_horas * 3600),
     'mensagem', p.mensagem, 'atualizado_em', p.atualizado_em, 'agora', now(),
     'whatsapp', coalesce(nullif(p.whatsapp_atendimento, ''), nullif(e.whatsapp, ''), ''),
+    'pagamento', case when p.valor is not null then json_build_object('valor', p.valor, 'frete', coalesce(p.frete, 0),
+      'sinal_pct', coalesce(p.sinal_pct, 0), 'sinal_pago', p.sinal_pago, 'quitado', p.quitado,
+      'pix_chave', e.pix_chave, 'pix_nome', e.pix_nome) end,
     'estudio', json_build_object('nome', e.nome, 'cor', e.cor,
       'logo', case when p_logo_tenho is not null and md5(e.logo) = p_logo_tenho then null else e.logo end,
       'logo_md5', md5(e.logo), 'prazo_entrega', e.prazo_entrega, 'prazo_correios', e.prazo_correios),

@@ -106,9 +106,9 @@
   function envios(estudio) {
     const e = Object.assign({}, PRAZOS_PADRAO, estudio || {});
     return {
-      entrega: { nome: 'Entrega feita por nós', curto: `Entrega própria (${e.prazo_entrega})`, prazo: `${e.prazo_entrega} após o término da produção`, final: 'Entregue', prontoMsg: `Seu pedido está pronto! Agora é só aguardar a entrega: ${e.prazo_entrega}.`, fimMsg: 'Pedido entregue. Obrigado pela confiança!' },
-      correios: { nome: 'Correios', curto: `Correios (postagem em ${e.prazo_correios})`, prazo: `postagem em ${e.prazo_correios} após o término da produção. O prazo de chegada é dos Correios: você recebe o código de rastreio.`, final: 'Postado', prontoMsg: `Seu pedido está pronto! A postagem nos Correios acontece em ${e.prazo_correios}.`, fimMsg: 'Pedido postado nos Correios. Acompanhe pelo código de rastreio que enviamos.' },
-      retirada: { nome: 'Retirada no local', curto: 'Retirada no local', prazo: 'avisamos aqui quando estiver pronto para retirar.', final: 'Retirado', prontoMsg: 'Seu pedido está pronto para retirada!', fimMsg: 'Pedido retirado. Obrigado pela confiança!' }
+      entrega: { nome: 'Entrega feita por nós', curto: `Entrega própria (${e.prazo_entrega})`, prazo: `${e.prazo_entrega} após o término da produção`, final: 'Entregue', liberar: 'a entrega', prontoTitulo: 'Seu pedido está pronto!', prontoSub: `Agora é só aguardar a entrega: ${e.prazo_entrega}.`, prontoMsg: `Seu pedido está pronto! Agora é só aguardar a entrega: ${e.prazo_entrega}.`, fimMsg: 'Pedido entregue. Obrigado pela confiança!' },
+      correios: { nome: 'Correios', curto: `Correios (postagem em ${e.prazo_correios})`, prazo: `postagem em ${e.prazo_correios} após o término da produção. O prazo de chegada é dos Correios: você recebe o código de rastreio.`, final: 'Postado', liberar: 'a postagem nos Correios', prontoTitulo: 'Seu pedido está pronto!', prontoSub: `A postagem nos Correios acontece em ${e.prazo_correios}.`, prontoMsg: `Seu pedido está pronto! A postagem nos Correios acontece em ${e.prazo_correios}.`, fimMsg: 'Pedido postado nos Correios. Acompanhe pelo código de rastreio que enviamos.' },
+      retirada: { nome: 'Retirada no local', curto: 'Retirada no local', prazo: 'avisamos aqui quando estiver pronto para retirar.', final: 'Retirado', liberar: 'a retirada', prontoTitulo: 'Seu pedido está pronto para retirada!', prontoSub: 'Já pode vir buscar.', prontoMsg: 'Seu pedido está pronto para retirada!', fimMsg: 'Pedido retirado. Obrigado pela confiança!' }
     };
   }
   const ENVIO = envios();
@@ -155,8 +155,9 @@
   const rgbHex = c => '#' + c.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('').toUpperCase();
   const misturar = (a, b, t) => rgbHex(hexRgb(a).map((v, i) => v + (hexRgb(b)[i] - v) * t));
   const luz = h => { const [r, g, b] = hexRgb(h).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); return .2126 * r + .7152 * g + .0722 * b; };
-  function aplicarCor(cor) {
-    const raiz = document.documentElement.style;
+  function aplicarCor(cor, alvo) {
+    const pagina = !alvo;
+    const raiz = (alvo || document.documentElement).style;
     const props = ['--cor', '--ouro', '--ouro-claro', '--fundo', '--cartao', '--linha', '--trilho', '--rodape-dlg', '--texto-btn', '--borda-btn'];
     props.forEach(p => raiz.removeProperty(p));
     if (!/^#[0-9A-F]{6}$/i.test(cor || '') || cor.toUpperCase() === COR_PADRAO) return;
@@ -173,7 +174,7 @@
     raiz.setProperty('--rodape-dlg', misturar(cor, '#FFFFFF', .94));
     raiz.setProperty('--borda-btn', escura);
     raiz.setProperty('--texto-btn', luz(media) > .35 ? '#1F1A17' : '#FFFFFF');
-    const meta = document.querySelector('meta[name="theme-color"]');
+    const meta = pagina && document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', misturar(cor, '#FFFFFF', .9));
   }
   // Logo do estúdio (ou a inicial do nome, quando não tem logo).
@@ -192,9 +193,97 @@
     document.querySelectorAll('link[rel="icon"]').forEach(l => { l.href = estudio.logo; l.removeAttribute('type'); });
   }
 
+  // ---------- Pagamento: contas a partir do que está no pedido ----------
+  // O sinal é uma parte do valor do pedido (sem o frete). O restante, mais o frete, é pago quando fica pronto.
+  function pagamento(pg) {
+    if (!pg || pg.valor == null) return null;
+    const valor = Number(pg.valor) || 0, frete = Number(pg.frete) || 0, pct = Number(pg.sinal_pct) || 0;
+    const sinal = Math.round(valor * pct) / 100;
+    const sinalPago = Boolean(pg.sinal_pago) && sinal > 0;
+    const geral = Math.round((valor + frete) * 100) / 100;
+    return {
+      valor, frete, geral, pct, sinal, temSinal: sinal > 0, sinalPago, quitado: Boolean(pg.quitado),
+      aReceber: Math.round((geral - (sinalPago ? sinal : 0)) * 100) / 100,   // o que falta quando o pedido fica pronto
+      depoisDoSinal: Math.round((geral - sinal) * 100) / 100,                 // restante previsto, com o sinal em dia
+      pixChave: pg.pix_chave || '', pixNome: pg.pix_nome || ''
+    };
+  }
+  const dinheiro = v => moeda.format(Number(v) || 0);
+  // Aceita "150", "150,5", "1.500,00" e "1500.00". Vazio = null; inválido = NaN.
+  function lerDinheiro(txt) {
+    let t = String(txt == null ? '' : txt).replace(/[R$\s]/g, '');
+    if (!t) return null;
+    if (/,/.test(t)) t = t.replace(/\./g, '').replace(',', '.');
+    const n = Number(t);
+    return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : NaN;
+  }
+
+  // ---------- Impressora 3D que mostra o andamento do pedido ----------
+  // estado: 'fila' (parada), 'imprimindo' (cabeça andando), 'pronto' (peça verde, com o visto) ou 'parado'.
+  // "de" é a porcentagem que estava na tela antes: a peça cresce de lá até a nova porcentagem.
+  let serieImpressora = 0;
+  const BASE_PECA = 158, ALTURA_PECA = 84;
+  const PECA = 'M82 158C71 142 68 124 76 110C82 100 89 93 89 84C89 79 85 77 82 74L118 74C115 77 111 79 111 84C111 93 118 100 124 110C132 124 129 142 118 158Z';
+  function impressora(pct, estado, de) {
+    pct = Math.max(0, Math.min(100, Number(pct) || 0));
+    const pronto = estado === 'pronto', andando = estado === 'imprimindo' && pct < 100;
+    const id = 'imp' + (++serieImpressora);
+    const cor = pronto ? ['var(--verde-claro)', 'var(--verde)', 'var(--verde-escuro)'] : ['var(--ouro-claro)', 'var(--ouro)', 'var(--cor)'];
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 196" aria-hidden="true">
+      <defs>
+        <linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:${cor[0]}"/><stop offset=".55" style="stop-color:${cor[1]}"/><stop offset="1" style="stop-color:${cor[2]}"/></linearGradient>
+        <clipPath id="${id}c"><rect class="imp-corte" x="56" y="${BASE_PECA}" width="88" height="0"/></clipPath>
+        <pattern id="${id}l" width="6" height="3.5" patternUnits="userSpaceOnUse"><path d="M0 3.2H6" stroke="#000" stroke-opacity=".13" stroke-width=".9"/></pattern>
+      </defs>
+      <ellipse cx="100" cy="161" rx="34" ry="3.2" class="imp-sombra"/>
+      <rect x="16" y="166" width="168" height="22" rx="9" class="imp-maquina"/>
+      <rect x="40" y="158" width="120" height="8" rx="3.5" class="imp-mesa"/>
+      <rect x="27" y="30" width="9" height="140" rx="3" class="imp-maquina"/>
+      <rect x="164" y="30" width="9" height="140" rx="3" class="imp-maquina"/>
+      <rect x="22" y="12" width="156" height="26" rx="9" class="imp-maquina"/>
+      <rect x="70" y="17.5" width="60" height="15" rx="4" class="imp-tela"/>
+      <text x="100" y="29" text-anchor="middle" class="imp-tela-txt">${pronto ? '100%' : estado === 'fila' && pct === 0 ? 'na fila' : Math.floor(pct) + '%'}</text>
+      <circle cx="36" cy="25" r="2.6" class="imp-led"/>
+      <circle cx="161" cy="177" r="3" class="imp-botao"/><rect x="28" y="175" width="26" height="4" rx="2" class="imp-botao"/>
+      <path d="${PECA}" class="imp-fantasma"/>
+      <g clip-path="url(#${id}c)"><path d="${PECA}" fill="url(#${id}g)"/><path d="${PECA}" fill="url(#${id}l)"/><path d="M84 152C76 138 74 124 80 112" class="imp-reflexo"/></g>
+      <g class="imp-eixo" transform="translate(0 ${BASE_PECA - 20})">
+        <rect x="36" y="0" width="128" height="6" rx="3" class="imp-trilho"/>
+        <g class="imp-cabeca">
+          <rect x="87" y="-6" width="26" height="17" rx="4.5" class="imp-carro"/>
+          <rect x="91" y="-2.5" width="18" height="3" rx="1.5" class="imp-carro-luz"/>
+          <path d="M94.5 11h11l-3.4 9h-4.2z" class="imp-bico"/>
+          <circle cx="100" cy="20" r="2.4" class="imp-quente"/>
+        </g>
+      </g>
+      ${pronto ? `<g class="imp-feito"><circle cx="150" cy="92" r="15" class="imp-visto-fundo"/><path d="M143 92.5l5 5 9.5-10.5" class="imp-visto"/>
+        <path d="M52 86l1.8 4.4 4.4 1.8-4.4 1.8-1.8 4.4-1.8-4.4-4.4-1.8 4.4-1.8z" class="imp-estrela e1"/><path d="M146 58l1.3 3.2 3.2 1.3-3.2 1.3-1.3 3.2-1.3-3.2-3.2-1.3 3.2-1.3z" class="imp-estrela e2"/><path d="M60 122l1.1 2.7 2.7 1.1-2.7 1.1-1.1 2.7-1.1-2.7-2.7-1.1 2.7-1.1z" class="imp-estrela e3"/></g>` : ''}
+    </svg>`;
+    const caixa = el('div', { class: 'imp' + (andando ? ' andando' : ' parada') + (pronto ? ' pronta' : '') + (Number(de) === pct ? ' quieta' : ''), role: 'img', 'aria-label': pronto ? 'Pedido pronto' : `${Math.floor(pct)}% pronto` });
+    caixa.append(document.importNode(new DOMParser().parseFromString(svg, 'image/svg+xml').documentElement, true));
+    const corte = caixa.querySelector('.imp-corte'), eixo = caixa.querySelector('.imp-eixo');
+    const por = v => {
+      v = Math.max(0, Math.min(100, v));
+      const topo = BASE_PECA - ALTURA_PECA * v / 100;
+      corte.setAttribute('y', topo); corte.setAttribute('height', BASE_PECA - topo);
+      // Parada (na fila ou pronta), a cabeça sobe e descansa; imprimindo, o bico encosta na última camada.
+      eixo.setAttribute('transform', `translate(0 ${andando || (estado !== 'pronto' && v > 0) ? topo - 20 : 44})`);
+    };
+    const inicio = Math.max(0, Math.min(100, Number(de) || 0));
+    const semMovimento = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (semMovimento || inicio === pct || typeof requestAnimationFrame !== 'function') por(pct);
+    else {
+      por(inicio);
+      const t0 = performance.now(), dur = 500 + Math.min(900, Math.abs(pct - inicio) * 14);
+      const passo = t => { const k = Math.max(0, Math.min(1, (t - t0) / dur)), e = 1 - (1 - k) ** 3; por(inicio + (pct - inicio) * e); if (k < 1) requestAnimationFrame(passo); };
+      requestAnimationFrame(passo);
+    }
+    return caixa;
+  }
+
   window.CT = {
     configurado: Boolean(URL_BASE && CHAVE), URL_BASE, pedir, entrar, sair, guardarSessao, garantirToken,
     get sessao() { return sessao; }, ErroServidor, nf, moeda, data, duracao, prazoTexto, quando, diaHora, relativo,
-    ETAPAS, NOME_ETAPA, ENVIO, envios, nomeEtapa, linkWhats, celular, formatarFone, el, aplicarCor, logoEstudio, iconeAba, COR_PADRAO
+    ETAPAS, NOME_ETAPA, ENVIO, envios, nomeEtapa, linkWhats, celular, formatarFone, el, aplicarCor, logoEstudio, iconeAba, COR_PADRAO, pagamento, dinheiro, lerDinheiro, impressora
   };
 })();

@@ -15,6 +15,7 @@
   --borda-btn: #A97B22;
   --serifa: Georgia, "Times New Roman", serif;
   --ok: #2F6B3A; --ok-bg: #E2F1DF;
+  --verde: #2FA35F; --verde-escuro: #1E7A44; --verde-claro: #8FDDB0; --verde-fundo: #E3F5EA;
   --alerta: #8A5A00; --alerta-bg: #FBEBC4;
   --perigo: #A8321F; --perigo-bg: #F9E0D8;
   --raio: 18px;
@@ -91,3 +92,36 @@ dialog::backdrop { background: rgb(59 29 14 / .45); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 
 .inicial { display: inline-grid; place-items: center; flex: none; border-radius: 22%; background: linear-gradient(160deg, var(--ouro-claro), var(--ouro) 60%, var(--cor)); color: var(--texto-btn); font-family: var(--serifa); font-weight: 700; box-shadow: var(--sombra); }
+
+/* Impressora 3D do andamento do pedido (CT.impressora) */
+.imp { width: 150px; max-width: 100%; }
+.imp svg { display: block; width: 100%; height: auto; overflow: visible; }
+.imp-maquina { fill: #4A2A17; }
+.imp-mesa { fill: #C9B79C; }
+.imp-sombra { fill: #000; opacity: .12; }
+.imp-tela { fill: #1B0F09; }
+.imp-tela-txt { font: 700 10.5px ui-monospace, "SF Mono", Menlo, Consolas, monospace; fill: var(--ouro-claro); letter-spacing: .3px; }
+.imp-led { fill: var(--ouro); }
+.imp-botao { fill: #6B4733; }
+.imp-fantasma { fill: none; stroke: var(--linha); stroke-width: 1.6; stroke-dasharray: 3 3.5; }
+.imp-reflexo { fill: none; stroke: #fff; stroke-opacity: .45; stroke-width: 2.4; stroke-linecap: round; }
+.imp-trilho { fill: #8A6A55; }
+.imp-carro { fill: var(--cor); }
+.imp-carro-luz { fill: #fff; opacity: .45; }
+.imp-bico { fill: #4A2A17; }
+.imp-quente { fill: #FF9D2E; opacity: 0; }
+.imp.andando .imp-cabeca { animation: imp-vai 1.7s ease-in-out infinite alternate; }
+.imp.andando .imp-quente { opacity: 1; animation: imp-pisca .7s ease-in-out infinite alternate; }
+.imp.andando .imp-led { animation: imp-pisca 1.1s ease-in-out infinite alternate; }
+.imp.parada .imp-cabeca { transform: translateX(-42px); }
+.imp.pronta .imp-tela-txt, .imp.pronta .imp-led { fill: var(--verde-claro); }
+.imp.pronta .imp-carro { fill: var(--verde-escuro); }
+.imp-visto-fundo { fill: var(--verde); stroke: #fff; stroke-width: 3; }
+.imp-visto { fill: none; stroke: #fff; stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; }
+.imp-estrela { fill: var(--verde); animation: imp-pisca 1.3s ease-in-out infinite alternate; }
+.imp-estrela.e2 { animation-delay: .4s; } .imp-estrela.e3 { animation-delay: .8s; }
+.imp-feito { animation: imp-surge .5s ease-out both; }
+.imp.quieta .imp-feito { animation: none; }
+@keyframes imp-vai { from { transform: translateX(-17px); } to { transform: translateX(17px); } }
+@keyframes imp-pisca { from { opacity: .35; } to { opacity: 1; } }
+@keyframes imp-surge { from { opacity: 0; } to { opacity: 1; } }

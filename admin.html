@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Painel de pedidos</title>
+<title>Área de membros</title>
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#F6ECDC">
 <link rel="icon" type="image/svg+xml" href="assets/icone.svg">
-<link rel="stylesheet" href="assets/estilo.css?v=5">
+<link rel="stylesheet" href="assets/estilo.css?v=6">
 <style>
   .pagina { max-width: 980px; margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom)); }
   .topo { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
@@ -93,11 +93,27 @@
   .sugestao p { margin: 0; white-space: pre-wrap; }
   .sugestao small { color: var(--suave); }
   .secao-titulo { margin: 22px 0 10px; font: 700 18px var(--serifa); }
+  .abas-login { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; margin: 0 0 16px; border-radius: 14px; background: var(--trilho); }
+  .abas-login button { min-height: 44px; border: 0; border-radius: 10px; background: transparent; font-weight: 700; color: var(--suave); }
+  .abas-login button[aria-selected="true"] { background: var(--cartao); color: var(--texto); box-shadow: var(--sombra); }
+  .login .voltar { display: inline-block; margin-top: 14px; color: var(--suave); font-size: 14px; }
+  .caixa-pg { display: grid; gap: 10px; border: 1px dashed var(--linha); border-radius: 14px; padding: 12px; }
+  .caixa-pg .grade3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .caixa-pg .resumo-pg { font-size: 14px; color: var(--suave); }
+  .caixa-pg .resumo-pg b { color: var(--texto); }
+  .marcar { display: flex; align-items: center; gap: 10px; min-height: 40px; font-weight: 650; cursor: pointer; }
+  .marcar input { width: 22px; height: 22px; accent-color: var(--verde); flex: none; }
+  .pedido .pg { font-size: 14px; color: var(--suave); }
+  .pedido .pg b { color: var(--texto); }
+  .pedido .pg .ok { color: var(--verde-escuro); font-weight: 700; }
+  .btn-verde { background: linear-gradient(180deg, #2A9958, #1A6E3D); border-color: #1A6E3D; color: #fff; }
+  .secao-cfg { margin: 6px 0 -4px; font: 700 16px var(--serifa); }
   .aviso button { margin-left: 10px; border: 0; border-radius: 8px; padding: 5px 10px; background: rgb(255 255 255 / .2); color: #fff; font-weight: 700; }
   @media (max-width: 720px) {
     .resumo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .grade { grid-template-columns: 1fr; }
     .chapas .grade3 { grid-template-columns: 1fr 1fr; }
+    .caixa-pg .grade3 { grid-template-columns: 1fr 1fr; }
     .fab { left: 16px; right: 16px; }
   }
 </style>
@@ -149,6 +165,17 @@
       <div class="campo"><label for="pInicio">Início da produção</label><input id="pInicio" type="datetime-local"><small>Só você vê.</small></div>
       <div class="campo"><label for="pFeitos">Já prontos</label><input id="pFeitos" type="number" inputmode="numeric" min="0" step="1" value="0"></div>
       <div class="previsao-viva inteiro" id="pPrevisao"></div>
+      <div class="caixa-pg inteiro">
+        <span class="rotulo" style="font-size:13px;font-weight:700">Pagamento (opcional)</span>
+        <div class="grade3">
+          <div class="campo"><label for="pValor">Valor do pedido (R$)</label><input id="pValor" inputmode="decimal" placeholder="Ex.: 150,00"></div>
+          <div class="campo"><label for="pFrete">Frete (R$)</label><input id="pFrete" inputmode="decimal" placeholder="Ex.: 20,00"></div>
+          <div class="campo"><label for="pSinal">Sinal antes (%)</label><input id="pSinal" type="number" inputmode="numeric" min="0" max="100" step="1" placeholder="0"></div>
+        </div>
+        <div class="resumo-pg" id="pPgResumo"></div>
+        <label class="marcar" id="pSinalPagoBox" hidden><input type="checkbox" id="pSinalPago">Sinal já recebido</label>
+        <label class="marcar" id="pQuitadoBox" hidden><input type="checkbox" id="pQuitado">Pagamento final recebido</label>
+      </div>
       <div class="campo inteiro" id="pSituacaoBox" hidden><label for="pSituacao">Situação</label>
         <select id="pSituacao"><option value="fila">Na fila</option><option value="producao">Em produção</option><option value="pronto">Pronto</option><option value="entregue">Entregue / postado / retirado</option><option value="cancelado">Cancelado</option></select>
         <small>Normalmente não precisa mexer: o pedido entra em produção e vira "Pronto" sozinho quando todas as peças ficam prontas.</small>
@@ -227,6 +254,10 @@
     <div class="campo"><label for="cWhats">WhatsApp de atendimento</label><input id="cWhats" type="tel" inputmode="tel" placeholder="(11) 98888-7777"><small>Número que o cliente chama pelo botão da página. Dá para trocar em cada pedido.</small></div>
     <div class="campo"><label for="cEntrega">Prazo da sua entrega própria</label><input id="cEntrega" maxlength="80" placeholder="de 2 a 5 dias corridos"><small>O cliente lê: "Entrega: <b>de 2 a 5 dias corridos</b> após o término da produção".</small></div>
     <div class="campo"><label for="cCorreios">Prazo de postagem nos Correios</label><input id="cCorreios" maxlength="80" placeholder="2 a 3 dias úteis"><small>O cliente lê: "postagem em <b>2 a 3 dias úteis</b> após o término da produção".</small></div>
+    <h3 class="secao-cfg">Pagamento por Pix</h3>
+    <div class="campo"><label for="cPix">Sua chave Pix</label><input id="cPix" maxlength="140" placeholder="CNPJ, celular, e-mail ou chave aleatória"><small>Aparece para o cliente na hora de pagar, com um botão de copiar. O dinheiro vai direto para a sua conta.</small></div>
+    <div class="campo"><label for="cPixNome">Nome que aparece no Pix (favorecido)</label><input id="cPixNome" maxlength="80" placeholder="Ex.: StudioCT 3D LTDA"><small>Ajuda o cliente a conferir que está pagando para a pessoa certa.</small></div>
+    <div class="campo"><label for="cSinal">Sinal antes de começar (%)</label><input id="cSinal" type="number" inputmode="numeric" min="0" max="100" step="1" placeholder="0"><small>Ex.: 40. Deixe 0 se você cobra tudo só quando o pedido fica pronto. Dá para mudar em cada pedido.</small></div>
     <p class="erro" id="cErro"></p>
   </div>
   <div class="dlg-pe"><button class="btn" type="button" data-fechar>Cancelar</button><button class="btn btn-cor" type="button" id="btnSalvarConfig">Salvar</button></div>
@@ -274,8 +305,8 @@
 
 <div class="aviso" id="aviso" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=5"></script>
-<script src="assets/comum.js?v=5"></script>
+<script src="config.js?v=6"></script>
+<script src="assets/comum.js?v=6"></script>
 <script>
 (() => {
   'use strict';
@@ -289,7 +320,7 @@
   let tela = 'pedidos';
   const estudio = () => (conta && conta.estudio) || { nome: '' };
   const vista = { filtro: 'andamento', busca: '' };
-  let editando = null, progAlvo = null, modoLogin = 'entrar', tokenRecuperacao = '';
+  let editando = null, progAlvo = null, modoLogin = location.hash === '#criar' ? 'criar' : 'entrar', tokenRecuperacao = '';
 
   /* ---------- utilidades ---------- */
   function abrir(d) { if (typeof d.showModal === 'function') { try { if (!d.open) d.showModal(); return; } catch (_) {} } d.setAttribute('open', ''); }
@@ -319,7 +350,10 @@
   const terminoDe = p => new Date(CT.data(p.inicio).getTime() + Number(p.prazo_horas) * 3600000);
   const linkCliente = p => new URL('./p/' + encodeURIComponent(p.codigo), location.href).href;
   const fimEtapa = e => ['pronto', 'entregue', 'cancelado'].includes(e);
-  const atrasado = p => !fimEtapa(p.etapa) && terminoDe(p).getTime() < Date.now();
+  const pgDe = p => CT.pagamento({ valor: p.valor, frete: p.frete, sinal_pct: p.sinal_pct, sinal_pago: p.sinal_pago, quitado: p.quitado });
+  // Pedido na fila esperando o sinal: a produção ainda não começou, então não conta como atrasado.
+  const esperaSinal = p => { const g = pgDe(p); return Boolean(g && g.temSinal && !g.sinalPago && !g.quitado && p.etapa === 'fila'); };
+  const atrasado = p => !fimEtapa(p.etapa) && !esperaSinal(p) && terminoDe(p).getTime() < Date.now();
   const paraLocal = d => { const x = new Date(d.getTime() - d.getTimezoneOffset() * 60000); return x.toISOString().slice(0, 16); };
   const envioDe = p => { const t = CT.envios(estudio()); return t[p.envio] || t.entrega; };
   const porChapa = p => p.por_chapa || (p.chapas ? Math.ceil(p.quantidade / p.chapas) : null);
@@ -354,9 +388,11 @@
       el('div', { class: 'campo' }, el('label', { for: 'lgSenha', text: nova ? 'Nova senha' : 'Senha' }), senha),
       criar || nova ? el('div', { class: 'campo' }, el('label', { for: 'lgSenha2', text: 'Repita a senha' }), senha2) : null,
       botao, m,
-      nova ? null : el('div', { class: 'linha-links' },
-        el('button', { class: 'link-txt', type: 'button', text: criar ? 'Já tenho conta: entrar' : 'Criar conta', onclick: () => { modoLogin = criar ? 'entrar' : 'criar'; telaLogin(); } }),
-        criar ? null : el('button', { class: 'link-txt', type: 'button', text: 'Esqueci a senha', onclick: esqueci })));
+      nova || criar ? null : el('div', { class: 'linha-links' },
+        el('button', { class: 'link-txt', type: 'button', text: 'Esqueci a senha', onclick: esqueci })));
+    const abas = nova ? null : el('div', { class: 'abas-login', role: 'tablist', 'aria-label': 'Entrar ou criar conta' },
+      el('button', { type: 'button', role: 'tab', id: 'abaEntrar', 'aria-selected': String(!criar), text: 'Entrar', onclick: () => { if (criar) { modoLogin = 'entrar'; telaLogin(); } } }),
+      el('button', { type: 'button', role: 'tab', id: 'abaCriar', 'aria-selected': String(criar), text: 'Criar conta', onclick: () => { if (!criar) { modoLogin = 'criar'; telaLogin(); } } }));
     form.addEventListener('submit', async e => {
       e.preventDefault();
       const em = email.value.trim().toLowerCase(), s = senha.value;
@@ -376,7 +412,7 @@
           const d = await CT.pedir('/auth/v1/signup?redirect_to=' + encodeURIComponent(location.origin + location.pathname), { metodo: 'POST', corpo: { email: em, password: s } });
           if (d && d.access_token) { CT.guardarSessao(d); return iniciar(); }
           modoLogin = 'entrar';
-          return telaLogin(`Conta criada! Abra o link que enviamos para ${em} e depois entre aqui.`, 'ok');
+          return telaLogin(`Quase lá! Enviamos um link de confirmação para ${em}. Abra o e-mail e toque no link (veja também o spam: ele chega em nome de "Supabase Auth"). Se você já tinha conta com este e-mail, é só entrar.`, 'ok');
         }
         falar('Entrando…', '');
         await CT.entrar(em, s);
@@ -385,7 +421,8 @@
         const t = String(err.message || '');
         falar(/not confirmed/i.test(t) ? 'Confirme o e-mail primeiro: toque no link que enviamos (veja o spam).'
           : /invalid login|invalid credentials/i.test(t) ? 'E-mail ou senha errados.'
-          : err.status === 429 || /rate limit/i.test(t) ? 'Muitas tentativas seguidas. Espere alguns minutos.'
+          : /already registered|already been registered/i.test(t) ? 'Este e-mail já tem conta. Use a aba "Entrar".'
+          : err.status === 429 || /rate limit/i.test(t) ? (criar ? 'Muitos cadastros nesta última hora. Tente de novo daqui a alguns minutos.' : 'Muitas tentativas seguidas. Espere alguns minutos.')
           : erroAmigavel(err));
       } finally { botao.disabled = false; }
     });
@@ -402,8 +439,10 @@
     CT.aplicarCor(marca && marca.cor);
     app.replaceChildren(el('section', { class: 'cartao login' },
       el('div', { class: 'marca' }, marca ? CT.logoEstudio(marca, 110) : svgIcone(76)),
-      el('h1', { text: nova ? 'Nova senha' : marca ? marca.nome : 'Painel de pedidos' }),
-      el('p', { text: nova ? 'Crie uma senha nova para a conta.' : criar ? 'Use o e-mail que você passou para liberar o seu acesso.' : 'Entre com a conta do seu estúdio.' }), form));
+      el('h1', { text: nova ? 'Nova senha' : marca && !criar ? marca.nome : 'Área de membros' }),
+      el('p', { text: nova ? 'Crie uma senha nova para a conta.' : criar ? 'Crie a sua conta para montar o painel do seu estúdio. Você recebe um e-mail para confirmar.' : 'Entre com a conta do seu estúdio.' }),
+      abas, form,
+      nova ? null : el('a', { class: 'voltar', href: './', text: '← Voltar para a página inicial' })));
     (nova ? senha : email).focus();
   }
   function retornoEmail() {
@@ -493,15 +532,22 @@
     const envio = envioDe(p);
     const pc = porChapa(p);
     const emAndamento = !fimEtapa(p.etapa);
+    const pg = pgDe(p), R = CT.dinheiro;
+    const semSinal = esperaSinal(p), devePagar = Boolean(pg && !pg.quitado && p.etapa === 'pronto');
+    const selo = semSinal ? ['pausado', 'Aguardando sinal'] : devePagar ? ['pausado', 'Aguardando pagamento'] : [p.etapa, CT.nomeEtapa(p.etapa, p.envio)];
+    const linhaPg = !pg ? null : el('div', { class: 'pg' }, el('b', { text: R(pg.geral) }), pg.frete > 0 ? ' com frete' : '',
+      pg.quitado ? [' · ', el('span', { class: 'ok', text: 'pago ✓' })]
+        : [pg.temSinal ? [' · ', pg.sinalPago ? el('span', { class: 'ok', text: `sinal de ${R(pg.sinal)} recebido ✓` }) : `aguardando sinal de ${R(pg.sinal)}`] : null,
+          ' · a receber ', el('b', { text: R(pg.aReceber) })]);
     return el('article', { class: 'cartao pedido', 'data-id': p.id },
       el('div', { class: 'pedido-topo' },
         el('div', {}, el('h3', { text: p.titulo }), el('div', { class: 'sub' }, el('b', { class: 'num', text: `nº ${p.numero}` }), ' · ' + [p.cliente, p.tipo, envio.nome].filter(Boolean).join(' · '))),
-        el('span', { class: 'selo selo-' + p.etapa }, el('i'), CT.nomeEtapa(p.etapa, p.envio))),
+        el('span', { class: 'selo selo-' + selo[0] }, el('i'), selo[1])),
       el('div', { class: 'barra', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(p.quantidade), 'aria-valuenow': String(p.feitos), 'aria-label': `${pct}% pronto` }, el('span', { style: `width:${pct}%` })),
       el('div', { class: 'meta' },
         el('span', {}, el('b', { text: `${nf.format(p.feitos)} de ${nf.format(p.quantidade)}` }), ` prontos · ${pct}%`),
-        emAndamento ? el('span', { class: atraso ? 'atraso' : '', text: atraso ? `Produção atrasada ${CT.duracao(-resta)}` : `Termina em ${CT.duracao(resta)} · ${CT.diaHora(term)}` }) : null),
-      linhaChapa(p),
+        emAndamento ? el('span', { class: atraso ? 'atraso' : '', text: semSinal ? 'Começa quando o sinal chegar' : atraso ? `Produção atrasada ${CT.duracao(-resta)}` : `Termina em ${CT.duracao(resta)} · ${CT.diaHora(term)}` }) : null),
+      linhaChapa(p), linhaPg,
       el('div', { class: 'acoes' },
         emAndamento ? el('button', { class: 'btn', type: 'button', text: '+1', 'aria-label': 'Mais um pronto', onclick: () => somar(p, 1) }) : null,
         emAndamento ? (pc ? el('button', { class: 'btn', type: 'button', text: `+1 chapa (${pc})`, 'aria-label': `Mais uma chapa: ${pc} prontos`, onclick: () => somar(p, pc) })
@@ -509,8 +555,10 @@
         emAndamento ? el('button', { class: 'btn', type: 'button', text: 'Atualizar', onclick: () => abrirProgresso(p) }) : null,
         el('button', { class: 'btn', type: 'button', text: 'Link do cliente', onclick: () => abrirLink(p) }),
         el('button', { class: 'btn', type: 'button', text: 'Editar', onclick: () => abrirPedido(p) }),
-        emAndamento ? el('button', { class: 'btn btn-cor grande', type: 'button', text: '✓ Pronto', onclick: () => marcarPronto(p) }) : null,
-        p.etapa === 'pronto' ? el('button', { class: 'btn btn-cor grande', type: 'button', text: `✓ Marcar como ${envio.final.toLowerCase()}`, onclick: () => marcarEntregue(p) }) : null));
+        pg && pg.temSinal && !pg.sinalPago && !pg.quitado && emAndamento ? el('button', { class: 'btn btn-verde grande', type: 'button', text: `✓ Sinal recebido (${R(pg.sinal)})`, onclick: () => receberSinal(p) }) : null,
+        emAndamento ? el('button', { class: 'btn ' + (semSinal ? '' : 'btn-cor ') + 'grande', type: 'button', text: '✓ Pronto', onclick: () => marcarPronto(p) }) : null,
+        devePagar ? el('button', { class: 'btn btn-verde grande', type: 'button', text: `✓ Pagamento recebido (${R(pg.aReceber)})`, onclick: () => receberPagamento(p) }) : null,
+        p.etapa === 'pronto' ? el('button', { class: 'btn ' + (devePagar ? '' : 'btn-cor ') + 'grande', type: 'button', text: `✓ Marcar como ${envio.final.toLowerCase()}`, onclick: () => marcarEntregue(p) }) : null));
   }
 
   async function somar(p, n) {
@@ -528,6 +576,23 @@
       await salvarPedido(p.id, { feitos: p.quantidade, etapa: 'pronto' });
       desenhar();
       aviso(`${p.titulo}: marcado como pronto.`, false, { rotulo: 'Desfazer', fn: () => salvarPedido(p.id, antes).then(desenhar, e => aviso(erroAmigavel(e), true)) });
+    } catch (e) { aviso(erroAmigavel(e), true); }
+  }
+  // Sinal recebido: se o pedido estava na fila esperando o sinal, a produção começa agora (e o prazo conta a partir de agora).
+  async function receberSinal(p) {
+    const antes = { sinal_pago: false, etapa: p.etapa, inicio: p.inicio };
+    const campos = p.etapa === 'fila' ? { sinal_pago: true, etapa: 'producao', inicio: new Date().toISOString() } : { sinal_pago: true };
+    try {
+      await salvarPedido(p.id, campos);
+      desenhar();
+      aviso(`${p.titulo}: sinal recebido.` + (p.etapa === 'fila' ? ' Produção iniciada.' : ''), false, { rotulo: 'Desfazer', fn: () => salvarPedido(p.id, antes).then(desenhar, e => aviso(erroAmigavel(e), true)) });
+    } catch (e) { aviso(erroAmigavel(e), true); }
+  }
+  async function receberPagamento(p) {
+    try {
+      await salvarPedido(p.id, { quitado: true });
+      desenhar();
+      aviso(`${p.titulo}: pagamento recebido. O cliente já vê "Pagamento confirmado".`, false, { rotulo: 'Desfazer', fn: () => salvarPedido(p.id, { quitado: false }).then(desenhar, e => aviso(erroAmigavel(e), true)) });
     } catch (e) { aviso(erroAmigavel(e), true); }
   }
   async function marcarEntregue(p) {
@@ -603,6 +668,11 @@
     $('#pSituacaoBox').hidden = !p;
     $('#pSituacao').value = p ? (['pausado', 'acabamento'].includes(p.etapa) ? 'producao' : p.etapa) : 'producao';
     $('#pMsg').value = p ? p.mensagem : '';
+    const emReais = v => v == null ? '' : Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    $('#pValor').value = p ? emReais(p.valor) : ''; $('#pFrete').value = p && p.frete ? emReais(p.frete) : '';
+    $('#pSinal').value = p ? (p.sinal_pct || '') : (estudio().sinal_pct || '');
+    $('#pSinalPago').checked = Boolean(p && p.sinal_pago); $('#pQuitado').checked = Boolean(p && p.quitado);
+    resumoPagamento();
     $('#btnExcluir').hidden = !p;
     $('#pErro').textContent = '';
     document.querySelectorAll('#dlgPedido .invalido').forEach(n => n.classList.remove('invalido'));
@@ -610,6 +680,27 @@
     abrir($('#dlgPedido'));
     $('#pTitulo').focus();
   }
+  // Mostra a conta do pagamento enquanto preenche: quanto é o sinal e quanto fica para quando o pedido estiver pronto.
+  function lerPagamento() {
+    const valor = CT.lerDinheiro($('#pValor').value), frete = CT.lerDinheiro($('#pFrete').value);
+    const st = $('#pSinal').value.trim(), sinal = st === '' ? 0 : Number(st.replace(',', '.'));
+    return { valor, frete, sinal };
+  }
+  function resumoPagamento() {
+    const { valor, frete, sinal } = lerPagamento(), box = $('#pPgResumo'), R = CT.dinheiro;
+    const valido = valor != null && !Number.isNaN(valor) && !Number.isNaN(frete) && Number.isInteger(sinal) && sinal >= 0 && sinal <= 100;
+    $('#pSinalPagoBox').hidden = !(valido && sinal > 0);
+    $('#pQuitadoBox').hidden = !(valido && editando);
+    if (valor == null) { box.textContent = 'Sem valor, o cliente não vê nada sobre pagamento.'; return; }
+    if (!valido) { box.textContent = 'Confira os números do pagamento.'; return; }
+    const g = CT.pagamento({ valor, frete, sinal_pct: sinal });
+    box.replaceChildren(...[
+      g.temSinal ? ['Sinal de ', el('b', { text: R(g.sinal) }), ' para começar · '] : null,
+      'Quando ficar pronto: ', el('b', { text: R(g.temSinal ? g.depoisDoSinal : g.geral) }), g.frete > 0 ? ' (com o frete)' : '',
+      estudio().pix_chave ? null : el('div', { style: 'color:var(--alerta);font-weight:650;margin-top:4px', text: 'Falta cadastrar sua chave Pix em Menu › Configurações para o cliente ver como pagar.' })
+    ].flat().filter(Boolean));
+  }
+  ['#pValor', '#pFrete', '#pSinal'].forEach(c => $(c).addEventListener('input', resumoPagamento));
   $('#btnNovo').addEventListener('click', () => abrirPedido(null));
   $('#btnSalvarPedido').addEventListener('click', async () => {
     const erro = (campo, t) => { $('#pErro').textContent = t; if (campo) { $(campo).classList.add('invalido'); $(campo).focus(); } };
@@ -625,18 +716,30 @@
     if (!Number.isInteger(feitos) || feitos < 0 || feitos > qtd) return erro('#pFeitos', `"Já prontos" precisa ficar entre 0 e ${qtd}.`);
     if (tel && tel.length < 10) return erro('#pTel', 'WhatsApp do cliente incompleto: coloque DDD e número.');
     if (atend && atend.length < 10) return erro('#pAtend', 'Seu WhatsApp está incompleto: coloque DDD e número.');
+    const pgF = lerPagamento();
+    if (Number.isNaN(pgF.valor)) return erro('#pValor', 'Valor do pedido inválido. Use o formato 150,00.');
+    if (Number.isNaN(pgF.frete)) return erro('#pFrete', 'Frete inválido. Use o formato 20,00.');
+    if (!Number.isInteger(pgF.sinal) || pgF.sinal < 0 || pgF.sinal > 100) return erro('#pSinal', 'O sinal é uma porcentagem inteira entre 0 e 100.');
+    if (pgF.valor == null && pgF.frete) return erro('#pValor', 'Para cobrar o frete, informe também o valor do pedido.');
+    const temValor = pgF.valor != null;
+    const sinalPago = temValor && pgF.sinal > 0 && $('#pSinalPago').checked;
     if (Number.isNaN(pc) || Number.isNaN(nch) || Number.isNaN(hch)) return erro(null, 'Os números das chapas precisam ser válidos.');
     const horas = prazo * ($('#pUnidade').value === 'dias' ? 24 : 1);
     if (horas > 24 * 366) return erro('#pPrazo', 'O prazo máximo é de 1 ano.');
-    let etapa = editando ? $('#pSituacao').value : 'producao';
+    // Pedido novo com sinal ainda não recebido espera na fila; sem sinal (ou com o sinal já pago) entra direto em produção.
+    let etapa = editando ? $('#pSituacao').value : (temValor && pgF.sinal > 0 && !sinalPago ? 'fila' : 'producao');
     if (feitos >= qtd && ['fila', 'producao'].includes(etapa)) etapa = 'pronto';
     const campos = {
       titulo, tipo: $('#pTipo').value.trim(), cliente: $('#pCliente').value.trim(), telefone: tel, whatsapp_atendimento: atend,
       envio: $('#pEnvio').value, quantidade: qtd, feitos, etapa,
       inicio: new Date($('#pInicio').value || Date.now()).toISOString(), prazo_horas: Math.round(horas * 100) / 100,
       chapas: nch || null, por_chapa: pc || null, horas_chapa: hch || null,
-      mensagem: $('#pMsg').value.trim()
+      mensagem: $('#pMsg').value.trim(),
+      valor: pgF.valor, frete: temValor ? pgF.frete : null, sinal_pct: temValor ? pgF.sinal : null,
+      sinal_pago: sinalPago, quitado: temValor && Boolean(editando) && $('#pQuitado').checked
     };
+    // Marcou o sinal como recebido num pedido que esperava na fila: a produção começa agora.
+    if (editando && !editando.sinal_pago && sinalPago && campos.etapa === 'fila') { campos.etapa = 'producao'; campos.inicio = new Date().toISOString(); }
     if (atend) ls.set(ATEND_KEY, atend);
     const btn = $('#btnSalvarPedido'); btn.disabled = true;
     try {
@@ -754,6 +857,7 @@
     cfg = { cor: (e.cor || CT.COR_PADRAO).toUpperCase(), logo: e.logo || '' };
     $('#cNome').value = e.nome || ''; $('#cWhats').value = e.whatsapp || '';
     $('#cEntrega').value = e.prazo_entrega || ''; $('#cCorreios').value = e.prazo_correios || '';
+    $('#cPix').value = e.pix_chave || ''; $('#cPixNome').value = e.pix_nome || ''; $('#cSinal').value = e.sinal_pct ? e.sinal_pct : '';
     $('#cErro').textContent = ''; $('#cLogo').value = '';
     desenharCores(); desenharPreviaLogo();
     abrir($('#dlgConfig'));
@@ -791,10 +895,13 @@
     const ent = $('#cEntrega').value.trim() || 'de 2 a 5 dias corridos', cor_ = $('#cCorreios').value.trim() || '2 a 3 dias úteis';
     if (!nome) { $('#cErro').textContent = 'Dê um nome ao estúdio.'; return $('#cNome').focus(); }
     if (w && w.length < 10) { $('#cErro').textContent = 'WhatsApp incompleto: coloque DDD e número.'; return $('#cWhats').focus(); }
+    const sinalCfg = $('#cSinal').value.trim() === '' ? 0 : Number($('#cSinal').value);
+    if (!Number.isInteger(sinalCfg) || sinalCfg < 0 || sinalCfg > 100) { $('#cErro').textContent = 'O sinal é uma porcentagem inteira entre 0 e 100.'; return $('#cSinal').focus(); }
     const btn = $('#btnSalvarConfig'); btn.disabled = true;
     try {
       const e = await CT.pedir('/rest/v1/rpc/ct_salvar_estudio', { metodo: 'POST', comLogin: true, corpo: {
-        p_nome: nome, p_whatsapp: w, p_cor: cfg.cor, p_logo: cfg.logo === (estudio().logo || '') ? null : cfg.logo, p_prazo_entrega: ent, p_prazo_correios: cor_ } });
+        p_nome: nome, p_whatsapp: w, p_cor: cfg.cor, p_logo: cfg.logo === (estudio().logo || '') ? null : cfg.logo, p_prazo_entrega: ent, p_prazo_correios: cor_,
+        p_pix_chave: $('#cPix').value.trim(), p_pix_nome: $('#cPixNome').value.trim(), p_sinal_pct: sinalCfg } });
       conta.estudio = e; lembrarMarca();
       fechar($('#dlgConfig')); desenhar(); aviso('Configurações salvas. Os clientes já veem as novidades.');
     } catch (err) { $('#cErro').textContent = erroAmigavel(err); }
@@ -914,17 +1021,48 @@
       el('div', { class: 'marca' }, svgIcone(76)), el('h1', { text: titulo }), el('p', { text: texto }),
       el('button', { class: 'btn', type: 'button', text: 'Sair desta conta', onclick: async () => { await CT.sair(); conta = null; telaLogin(); } })));
   }
+  // Conta nova, ainda sem estúdio: a própria pessoa cria o painel dela.
+  function boasVindas() {
+    $('#btnNovo').hidden = true; CT.aplicarCor(null);
+    const nome = el('input', { id: 'obNome', maxlength: '80', placeholder: 'Ex.: Impressões da Ana', autocomplete: 'organization' });
+    const whats = el('input', { id: 'obWhats', type: 'tel', inputmode: 'tel', placeholder: '(11) 98888-7777' });
+    const m = el('p', { class: 'msg ruim', id: 'obMsg' });
+    const botao = el('button', { class: 'btn btn-cor', type: 'submit', text: 'Criar meu painel' });
+    const form = el('form', { novalidate: true },
+      el('div', { class: 'campo' }, el('label', { for: 'obNome', text: 'Nome do seu estúdio' }), nome, el('small', { text: 'Aparece para os seus clientes. Dá para trocar depois.' })),
+      el('div', { class: 'campo' }, el('label', { for: 'obWhats', text: 'WhatsApp de atendimento (opcional)' }), whats, el('small', { text: 'O número que o cliente chama pelo botão da página do pedido.' })),
+      botao, m);
+    form.addEventListener('submit', async ev => {
+      ev.preventDefault();
+      const n = nome.value.trim(), w = CT.celular(whats.value);
+      if (!n) { m.textContent = 'Digite o nome do seu estúdio.'; return nome.focus(); }
+      if (w && w.length < 10) { m.textContent = 'WhatsApp incompleto: coloque DDD e número.'; return whats.focus(); }
+      botao.disabled = true; m.textContent = '';
+      try {
+        conta.estudio = await CT.pedir('/rest/v1/rpc/ct_criar_meu_estudio', { metodo: 'POST', comLogin: true, corpo: { p_nome: n, p_whatsapp: w } });
+        lembrarMarca(); tela = 'pedidos'; await carregar(); desenhar();
+        aviso('Painel criado! Coloque sua logo, cor e chave Pix.', false, { rotulo: 'Configurar', fn: abrirConfig });
+      } catch (e) { m.textContent = erroAmigavel(e); botao.disabled = false; }
+    });
+    app.replaceChildren(el('section', { class: 'cartao login' },
+      el('div', { class: 'marca' }, svgIcone(76)), el('h1', { text: 'Bem-vindo!' }),
+      el('p', { text: 'Falta só um passo para o seu painel ficar pronto.' }), form,
+      el('button', { class: 'link-txt', type: 'button', style: 'margin-top:12px', text: 'Sair desta conta', onclick: async () => { await CT.sair(); conta = null; modoLogin = 'entrar'; telaLogin(); } })));
+    nome.focus();
+  }
   async function iniciar() {
     if (!CT.configurado) { app.replaceChildren(el('p', { class: 'cartao', text: 'Falta configurar o servidor em config.js.' })); return; }
     if (retornoEmail()) return;
     if (!CT.sessao) return telaLogin();
     try {
       conta = await CT.pedir('/rest/v1/rpc/ct_minha_conta', { metodo: 'POST', corpo: {}, comLogin: true });
+      // Quem chega pelo link de confirmação do e-mail ainda não tem o e-mail guardado na sessão.
+      if (conta && conta.email && CT.sessao && !CT.sessao.email) CT.sessao.email = conta.email;
       const e = conta && conta.estudio;
       if (e && e.ativo) { lembrarMarca(); tela = 'pedidos'; await carregar(); return desenhar(); }
       if (conta && conta.dono_plataforma) return irPlataforma();
       if (e) return semEstudio('Acesso pausado', `O painel do ${e.nome} está pausado no momento. Seus pedidos estão guardados e os links dos clientes continuam funcionando. Fale com a gente para reativar.`);
-      return semEstudio('Conta sem estúdio', `A conta ${CT.sessao.email} ainda não está ligada a nenhum estúdio. Peça para quem te convidou liberar o acesso com este e-mail.`);
+      return boasVindas();
     } catch (e) {
       if (e.status === 401 || !CT.sessao) return telaLogin('Sua sessão venceu. Entre de novo.', 'ruim');
       app.replaceChildren(el('div', { class: 'cartao vazio' }, el('b', { text: 'Não consegui carregar os pedidos' }), erroAmigavel(e), el('p', {}, el('button', { class: 'btn', type: 'button', text: 'Tentar de novo', onclick: iniciar }))));

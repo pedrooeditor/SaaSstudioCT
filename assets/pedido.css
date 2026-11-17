@@ -1,0 +1,79 @@
+/* Tela que o cliente vê: usada na página do pedido (404.html) e na demonstração da página inicial. */
+.acomp { display: grid; gap: 14px; }
+/* Pedido pronto: a tela inteira passa para o verde. */
+/* (a marca do estúdio, no topo, continua com a cor dela) */
+.acomp.concluido > :not(.topo) { --cor: #1A6E3D; --ouro: #218349; --ouro-claro: #2A9958; --texto-btn: #fff; --borda-btn: #1A6E3D; --trilho: #D8EFE0; }
+.acomp .topo { display: grid; justify-items: center; gap: 4px; padding: 6px 0 2px; text-align: center; }
+.acomp .topo img { filter: drop-shadow(0 8px 14px rgb(60 40 20 / .22)); }
+.acomp .topo strong { font: 700 18px/1.2 var(--serifa); margin-top: 4px; }
+.acomp .topo small { color: var(--suave); font-size: 13px; letter-spacing: .04em; text-transform: uppercase; font-weight: 650; }
+.acomp .titulo { margin: 8px 0 2px; font: 700 24px/1.2 var(--serifa); }
+.acomp .ola { margin: 0; color: var(--suave); }
+.acomp .linha-tag { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 24px; }
+.acomp .numero { color: var(--suave); font-size: 13px; font-weight: 700; white-space: nowrap; }
+.acomp .tipo { display: inline-block; padding: 3px 12px; border-radius: 999px; background: #FBEBC4; color: #7A5410; font-size: 12.5px; font-weight: 700; }
+.acomp .progresso { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; align-items: center; margin-top: 12px; }
+.acomp .lado { display: grid; gap: 10px; min-width: 0; }
+.acomp .pct { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; }
+.acomp .pct b { font: 700 38px/1 var(--serifa); color: var(--cor); }
+.acomp .pct span { color: var(--suave); font-size: 13.5px; font-weight: 650; }
+.acomp.concluido .pct b { color: var(--verde-escuro); }
+.acomp .numeros { display: grid; gap: 7px; }
+.acomp .num { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding-bottom: 5px; border-bottom: 1px dashed var(--linha); }
+.acomp .num:last-child { border: 0; padding: 0; }
+.acomp .num span { color: var(--suave); font-size: 14px; }
+.acomp .num b { font: 700 19px var(--serifa); }
+.acomp .etapas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 0; padding: 0; list-style: none; }
+.acomp .etapas li { display: grid; justify-items: center; gap: 6px; text-align: center; font-size: 12px; font-weight: 650; color: var(--suave); position: relative; }
+.acomp .etapas li::before { content: ""; position: absolute; top: 12px; left: -50%; right: 50%; height: 3px; background: var(--linha); }
+.acomp .etapas li:first-child::before { display: none; }
+.acomp .etapas li.feita::before, .acomp .etapas li.atual::before { background: var(--ouro); }
+.acomp .etapas .bola { position: relative; z-index: 1; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--cartao); border: 3px solid var(--linha); color: var(--texto-btn); font-size: 13px; font-weight: 800; }
+.acomp .etapas li.feita .bola { background: linear-gradient(180deg, var(--ouro-claro), var(--ouro)); border-color: var(--cor); }
+.acomp .etapas li.atual .bola { border-color: var(--cor); box-shadow: 0 0 0 4px rgb(217 169 63 / .3); }
+.acomp.concluido .etapas li.atual .bola { background: linear-gradient(180deg, var(--ouro-claro), var(--ouro)); box-shadow: 0 0 0 4px rgb(47 163 95 / .25); }
+.acomp .etapas li.atual { color: var(--texto); }
+.acomp .faixa { padding: 13px 15px; border-radius: 14px; font-weight: 650; }
+.acomp .faixa.perigo { background: var(--perigo-bg); color: var(--perigo); }
+.acomp .faixa.feito { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; padding: 16px; color: #fff;
+  background: linear-gradient(135deg, var(--verde), var(--verde-escuro)); box-shadow: 0 14px 28px -16px rgb(20 110 60 / .8); }
+.acomp .faixa.feito .visto { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: rgb(255 255 255 / .2); font-size: 22px; font-weight: 800; }
+.acomp .faixa.feito b { display: block; font: 700 19px/1.2 var(--serifa); }
+.acomp .faixa.feito span { display: block; margin-top: 2px; font-weight: 500; font-size: 14.5px; opacity: .95; }
+.acomp .bloco h2 { margin: 0 0 10px; font-weight: 700; font-size: 13px; line-height: 1.3; font-family: inherit; color: var(--suave); text-transform: uppercase; letter-spacing: .06em; }
+.acomp .data-grande { font: 700 20px/1.25 var(--serifa); }
+.acomp .contagem { margin-top: 2px; font-weight: 650; }
+.acomp .contagem.atraso { color: var(--alerta); }
+.acomp .detalhe { margin: 12px 0 0; color: var(--suave); font-size: 14.5px; }
+.acomp .detalhe b { color: var(--texto); }
+.acomp .divisor { border: 0; border-top: 1px solid var(--linha); margin: 14px 0; }
+.acomp .recado p { margin: 0; white-space: pre-wrap; font-size: 15.5px; }
+.acomp .rodape { margin: 0; text-align: center; color: var(--suave); font-size: 13px; }
+.acomp .btn-whats { width: 100%; min-height: 52px; font-size: 16px; }
+.acomp .vazio { text-align: center; padding: 34px 20px; }
+.acomp .vazio h1 { font: 700 21px var(--serifa); margin: 0 0 6px; }
+.acomp .vazio p { margin: 0; color: var(--suave); }
+
+/* Pagamento */
+.acomp .pagar { border: 2px solid var(--verde); background: linear-gradient(180deg, var(--verde-fundo), var(--cartao) 55%); }
+.acomp .pagar h2 { color: var(--verde-escuro); }
+.acomp .valor-grande { font: 700 34px/1.1 var(--serifa); color: var(--verde-escuro); }
+.acomp .valor-sub { margin: 2px 0 0; color: var(--suave); font-size: 14px; }
+.acomp .conta { display: grid; gap: 6px; margin: 12px 0 0; padding: 0; list-style: none; font-size: 14.5px; }
+.acomp .conta li { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.acomp .conta li span { color: var(--suave); }
+.acomp .conta li b { white-space: nowrap; }
+.acomp .conta li.total { margin-top: 4px; padding-top: 8px; border-top: 1px dashed var(--linha); font-size: 16px; }
+.acomp .conta li.total span { color: var(--texto); font-weight: 700; }
+.acomp .conta .pago { color: var(--verde-escuro); }
+.acomp .pix { display: grid; gap: 8px; margin-top: 14px; padding: 12px; border-radius: 14px; background: #fff; border: 1px solid var(--linha); }
+.acomp .pix small { color: var(--suave); font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.acomp .pix code { font: 700 17px/1.3 ui-monospace, "SF Mono", Menlo, Consolas, monospace; overflow-wrap: anywhere; user-select: all; }
+.acomp .pix .favorecido { color: var(--suave); font-size: 13.5px; }
+.acomp .btn-verde { background: linear-gradient(180deg, #2A9958, #1A6E3D); border-color: #1A6E3D; color: #fff; box-shadow: inset 0 1px 0 rgb(255 255 255 / .25), 0 8px 18px -10px rgb(20 110 60 / .9); }
+.acomp .pix .btn, .acomp .pagar > .btn { width: 100%; min-height: 48px; }
+.acomp .pagar > .btn { margin-top: 10px; }
+.acomp .aviso-pg { margin: 12px 0 0; font-size: 14px; color: var(--suave); }
+.acomp .quitado { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--verde-escuro); }
+.acomp .quitado i { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--verde); color: #fff; font-style: normal; }
+@media (max-width: 380px) { .acomp .progresso { grid-template-columns: 1fr; justify-items: center; } .acomp .lado { width: 100%; } .acomp .pct { justify-content: center; } }

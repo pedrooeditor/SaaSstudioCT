@@ -3,198 +3,386 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Acompanhe seu pedido</title>
-<meta name="robots" content="noindex">
+<title>StudioCT 3D | Seu cliente acompanha o pedido sozinho</title>
+<meta name="description" content="Ferramenta para estúdios de impressão 3D: você manda um link e o cliente acompanha a produção, o prazo e o pagamento por Pix. Sem instalar nada.">
 <meta name="theme-color" content="#F6ECDC">
-<!-- Funciona tanto em /?p=CODIGO quanto no link curto /p/CODIGO (servido pelo 404.html). -->
-<script>(function () { var m = location.pathname.match(/^(.*?\/)p\/[^\/]+\/?$/); if (m) document.write('<base href="' + m[1].replace(/"/g, '') + '">'); })();</script>
-<link rel="icon" type="image/svg+xml" href="assets/icone.svg">
-<link rel="stylesheet" href="assets/estilo.css?v=5">
+<meta property="og:title" content="StudioCT 3D | Seu cliente acompanha o pedido sozinho">
+<meta property="og:description" content="Você manda um link. O cliente vê a produção andando, o prazo e o valor a pagar.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://studioct3d.com.br/assets/icone-512.png">
+<!-- Links antigos de pedido (/?p=CODIGO) continuam funcionando: vão para a página do pedido. -->
+<script>(function () { var p = new URLSearchParams(location.search).get('p'); if (p) location.replace('p/' + encodeURIComponent(p)); })();</script>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/estilo.css?v=6">
+<link rel="stylesheet" href="assets/pedido.css?v=6">
 <style>
-  .pagina { max-width: 560px; margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom)); display: grid; gap: 14px; }
-  .topo { display: grid; justify-items: center; gap: 4px; padding: 6px 0 2px; text-align: center; }
-  .topo img { filter: drop-shadow(0 8px 14px rgb(60 40 20 / .22)); }
-  .topo strong { font: 700 18px/1.2 var(--serifa); margin-top: 4px; }
-  .topo small { color: var(--suave); font-size: 13px; letter-spacing: .04em; text-transform: uppercase; font-weight: 650; }
-  .titulo { margin: 8px 0 2px; font: 700 24px/1.2 var(--serifa); }
-  .ola { margin: 0; color: var(--suave); }
-  .linha-tag { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 24px; }
-  .numero { color: var(--suave); font-size: 13px; font-weight: 700; white-space: nowrap; }
-  .tipo { display: inline-block; padding: 3px 12px; border-radius: 999px; background: #FBEBC4; color: #7A5410; font-size: 12.5px; font-weight: 700; }
-  .progresso { display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; margin-top: 16px; }
-  .anel { position: relative; width: 118px; height: 118px; }
-  .anel svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-  .anel circle { fill: none; stroke-width: 12; }
-  .anel .fundo { stroke: var(--trilho); }
-  .anel .valor { stroke: url(#ouro); stroke-linecap: round; transition: stroke-dashoffset .8s ease; }
-  .anel b { position: absolute; inset: 0; display: grid; place-items: center; font: 700 27px var(--serifa); }
-  .numeros { display: grid; gap: 8px; }
-  .num { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding-bottom: 6px; border-bottom: 1px dashed var(--linha); }
-  .num:last-child { border: 0; padding: 0; }
-  .num span { color: var(--suave); font-size: 14px; }
-  .num b { font: 700 21px var(--serifa); }
-  .etapas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 0; padding: 0; list-style: none; }
-  .etapas li { display: grid; justify-items: center; gap: 6px; text-align: center; font-size: 12px; font-weight: 650; color: var(--suave); position: relative; }
-  .etapas li::before { content: ""; position: absolute; top: 12px; left: -50%; right: 50%; height: 3px; background: var(--linha); }
-  .etapas li:first-child::before { display: none; }
-  .etapas li.feita::before, .etapas li.atual::before { background: var(--ouro); }
-  .etapas .bola { position: relative; z-index: 1; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--cartao); border: 3px solid var(--linha); color: var(--texto); font-size: 13px; font-weight: 800; }
-  .etapas li.feita .bola { background: linear-gradient(180deg, var(--ouro-claro), var(--ouro)); border-color: var(--cor); }
-  .etapas li.atual .bola { border-color: var(--cor); box-shadow: 0 0 0 4px rgb(217 169 63 / .3); }
-  .etapas li.atual { color: var(--texto); }
-  .faixa { padding: 13px 15px; border-radius: 14px; font-weight: 650; }
-  .faixa.alerta { background: var(--alerta-bg); color: var(--alerta); }
-  .faixa.ok { background: var(--ok-bg); color: var(--ok); }
-  .faixa.perigo { background: var(--perigo-bg); color: var(--perigo); }
-  .bloco h2 { margin: 0 0 10px; font-weight: 700; font-size: 13px; line-height: 1.3; font-family: inherit; color: var(--suave); text-transform: uppercase; letter-spacing: .06em; }
-  .data-grande { font: 700 20px/1.25 var(--serifa); }
-  .contagem { margin-top: 2px; font-weight: 650; }
-  .contagem.atraso { color: var(--alerta); }
-  .detalhe { margin: 12px 0 0; color: var(--suave); font-size: 14.5px; }
-  .detalhe b { color: var(--texto); }
-  .divisor { border: 0; border-top: 1px solid var(--linha); margin: 14px 0; }
-  .recado p { margin: 0; white-space: pre-wrap; font-size: 15.5px; }
-  .rodape { text-align: center; color: var(--suave); font-size: 13px; }
-  .btn-whats { width: 100%; min-height: 52px; font-size: 16px; }
-  .vazio { text-align: center; padding: 34px 20px; }
-  .vazio h1 { font: 700 21px var(--serifa); margin: 0 0 6px; }
-  .vazio p { margin: 0; color: var(--suave); }
-  .carregando { text-align: center; padding: 60px 0; color: var(--suave); }
-  @media (max-width: 380px) { .progresso { grid-template-columns: 1fr; justify-items: center; } .numeros { width: 100%; } }
+  :root { --escuro: #2B1509; --creme: #FFF6E6; }
+  html { scroll-behavior: smooth; }
+  body { font-size: 17px; line-height: 1.55; }
+  a { color: inherit; }
+  .faixa-larga { width: min(1120px, 100% - 40px); margin-inline: auto; }
+  h1, h2, h3 { font-family: var(--serifa); line-height: 1.12; margin: 0; }
+  h2 { font-size: clamp(28px, 4.2vw, 42px); }
+  .sobre { margin: 0 0 12px; font-size: 13px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--cor); }
+  .lead { margin: 14px 0 0; font-size: clamp(17px, 2vw, 20px); color: var(--suave); max-width: 46ch; }
+  .btn-grande { min-height: 54px; padding: 0 26px; font-size: 17px; border-radius: 14px; }
+
+  /* Topo */
+  .barra-topo { position: sticky; top: 0; z-index: 40; background: rgb(246 236 220 / .92); border-bottom: 1px solid var(--linha); }
+  @supports (backdrop-filter: blur(8px)) { .barra-topo { backdrop-filter: blur(10px); background: rgb(246 236 220 / .78); } }
+  .barra-topo .faixa-larga { display: flex; align-items: center; gap: 18px; min-height: 64px; }
+  .marca-topo { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 700 19px var(--serifa); white-space: nowrap; }
+  .marca-topo img { width: 38px; height: auto; }
+  .nav { display: flex; gap: 22px; margin-left: auto; font-size: 15px; font-weight: 650; }
+  .nav a { text-decoration: none; color: var(--suave); }
+  .nav a:hover { color: var(--texto); }
+  .barra-topo .btn { min-height: 42px; white-space: nowrap; }
+  @media (max-width: 760px) { .nav { display: none; } .barra-topo .btn { margin-left: auto; padding: 0 12px; font-size: 14.5px; } .marca-topo { font-size: 17px; } }
+
+  /* Abertura */
+  .abertura { position: relative; overflow: hidden; padding: clamp(36px, 6vw, 72px) 0 clamp(40px, 6vw, 80px);
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgb(217 169 63 / .28), transparent 70%),
+      repeating-linear-gradient(180deg, transparent 0 13px, rgb(120 80 20 / .045) 13px 14px); }
+  .abertura h1 { font-size: clamp(36px, 5.6vw, 62px); letter-spacing: -.01em; max-width: 13ch; }
+  .abertura h1 em { font-style: normal; color: var(--cor); }
+  .selinho { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 18px; padding: 6px 14px; border-radius: 999px; background: var(--cartao); border: 1px solid var(--linha); font-size: 14px; font-weight: 700; }
+  .selinho i { width: 8px; height: 8px; border-radius: 50%; background: var(--verde); }
+  .acoes-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 26px; }
+  .acoes-topo .entrar { font-weight: 700; color: var(--cor); }
+  .garantias { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 22px 0 0; padding: 0; list-style: none; color: var(--suave); font-size: 15px; }
+  .garantias li::before { content: "✓ "; color: var(--verde-escuro); font-weight: 800; }
+
+  /* Demonstração: painel do estúdio de um lado, celular do cliente do outro */
+  .palco { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: clamp(24px, 5vw, 64px); align-items: center; }
+  .lado-painel { display: grid; gap: 14px; }
+  .rotulo-palco { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--suave); }
+  .rotulo-palco b { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--texto); color: var(--creme); font-size: 13px; letter-spacing: 0; }
+  .painel-demo { display: grid; gap: 10px; max-width: 520px; }
+  .painel-demo .cabeca-p { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .painel-demo h3 { font-size: 19px; }
+  .painel-demo .sub { color: var(--suave); font-size: 13.5px; }
+  .painel-demo .sub b { color: var(--texto); }
+  .painel-demo .meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; font-size: 14px; }
+  .painel-demo .pg { font-size: 14px; color: var(--suave); }
+  .painel-demo .pg b { color: var(--texto); }
+  .painel-demo .acoes { display: flex; flex-wrap: wrap; gap: 8px; }
+  .painel-demo .acoes .btn { min-height: 44px; padding: 0 14px; font-size: 15px; }
+  .painel-demo .acoes .grande { flex: 1 1 100%; min-height: 50px; font-size: 16px; }
+  .btn-verde { background: linear-gradient(180deg, #2A9958, #1A6E3D); border-color: #1A6E3D; color: #fff; }
+  .painel-demo .btn.toque { animation: toque .5s ease-out; }
+  @keyframes toque { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgb(184 134 43 / .55); } 40% { transform: scale(.95); } 100% { transform: scale(1); box-shadow: 0 0 0 16px rgb(184 134 43 / 0); } }
+  .dica-palco { margin: 0; color: var(--suave); font-size: 15px; max-width: 46ch; }
+  .dica-palco b { color: var(--texto); }
+  .cores-demo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; color: var(--suave); font-weight: 650; }
+  .cores-demo button { width: 30px; height: 30px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 1px var(--linha); padding: 0; }
+  .cores-demo button[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--texto); }
+  .fone { position: relative; width: 336px; max-width: 100%; padding: 11px; border-radius: 46px; background: linear-gradient(160deg, #4A2A17, #1D0D05); box-shadow: 0 40px 70px -30px rgb(43 21 9 / .75), inset 0 0 0 2px rgb(255 255 255 / .08); }
+  .fone::before { content: ""; position: absolute; top: 20px; left: 50%; width: 84px; height: 20px; margin-left: -42px; border-radius: 12px; background: #1D0D05; z-index: 2; }
+  .fone .tela { height: 620px; overflow-y: auto; overscroll-behavior: contain; border-radius: 36px; background: var(--fundo); padding: 46px 13px 18px; scrollbar-width: none; }
+  .fone .tela::-webkit-scrollbar { display: none; }
+  .fone .acomp .titulo { font-size: 21px; }
+  .fone .acomp .imp { width: 116px; }
+  .fone .acomp .pct b { font-size: 32px; }
+  .fone .acomp .progresso { gap: 12px; }
+  .fone .acomp .cartao { padding: 15px; }
+  @media (max-width: 880px) {
+    .palco { grid-template-columns: 1fr; justify-items: center; }
+    .lado-painel { width: 100%; justify-items: stretch; }
+    .painel-demo { max-width: none; }
+  }
+
+  /* O problema */
+  .problema { background: var(--escuro); color: var(--creme); padding: clamp(48px, 7vw, 90px) 0; }
+  .problema .sobre { color: var(--ouro); }
+  .problema .lead { color: #E6D3B8; }
+  .problema .dois { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(28px, 5vw, 64px); align-items: center; }
+  .conversa { display: grid; gap: 10px; justify-items: start; padding: 22px; border-radius: 24px; background: #1C0C04; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .06); }
+  .balao { max-width: 88%; padding: 9px 13px 7px; border-radius: 4px 16px 16px 16px; background: #3A2114; font-size: 15.5px; line-height: 1.35; }
+  .balao small { display: block; margin-top: 2px; text-align: right; font-size: 11px; opacity: .6; }
+  .balao.meu { justify-self: end; border-radius: 16px 4px 16px 16px; background: #1E5B3A; }
+  .conversa .conta-msgs { justify-self: center; margin-top: 4px; padding: 5px 12px; border-radius: 999px; background: var(--perigo); font-size: 13px; font-weight: 700; }
+  @media (max-width: 800px) { .problema .dois { grid-template-columns: 1fr; } }
+
+  /* Seções claras */
+  .secao { padding: clamp(48px, 7vw, 90px) 0; }
+  .secao.creme { background: var(--cartao); border-block: 1px solid var(--linha); }
+  .passos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 34px 0 0; padding: 0; list-style: none; counter-reset: passo; }
+  .passos li { position: relative; padding: 26px 22px 22px; border-radius: 20px; background: var(--fundo); border: 1px solid var(--linha); counter-increment: passo; }
+  .passos li::before { content: counter(passo); display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 14px; border-radius: 14px; font: 700 22px var(--serifa);
+    background: linear-gradient(160deg, var(--ouro-claro), var(--ouro) 60%, var(--cor)); color: var(--texto); }
+  .passos h3 { font-size: 21px; margin-bottom: 6px; }
+  .passos p { margin: 0; color: var(--suave); font-size: 16px; }
+  .recursos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 34px; }
+  .recurso { padding: 22px; border-radius: 20px; background: var(--cartao); box-shadow: var(--sombra); }
+  .recurso svg { width: 34px; height: 34px; color: var(--cor); margin-bottom: 10px; }
+  .recurso h3 { font-size: 19px; margin-bottom: 6px; }
+  .recurso p { margin: 0; color: var(--suave); font-size: 15.5px; }
+  @media (max-width: 860px) { .passos, .recursos { grid-template-columns: 1fr; } }
+
+  /* Dúvidas */
+  .duvidas { display: grid; gap: 10px; max-width: 800px; margin-top: 30px; }
+  .duvidas details { border-radius: 16px; background: var(--fundo); border: 1px solid var(--linha); }
+  .duvidas summary { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 16px 18px; font-weight: 700; cursor: pointer; list-style: none; }
+  .duvidas summary::-webkit-details-marker { display: none; }
+  .duvidas summary::after { content: "+"; font: 700 22px var(--serifa); color: var(--cor); }
+  .duvidas details[open] summary::after { content: "–"; }
+  .duvidas p { margin: 0; padding: 0 18px 18px; color: var(--suave); }
+
+  /* Chamada final e rodapé */
+  .final { padding: clamp(48px, 7vw, 86px) 0; text-align: center; background: var(--escuro); color: var(--creme);
+    background-image: repeating-linear-gradient(180deg, transparent 0 13px, rgb(255 255 255 / .03) 13px 14px); }
+  .final h2 { max-width: 18ch; margin-inline: auto; }
+  .final p { margin: 14px auto 26px; max-width: 44ch; color: #E6D3B8; }
+  .rodape-site { padding: 24px 0 calc(24px + env(safe-area-inset-bottom)); background: #1C0C04; color: #BFA98C; font-size: 14px; }
+  .rodape-site .faixa-larga { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 20px; }
+  .rodape-site a { color: var(--ouro-claro); }
 </style>
 </head>
 <body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <defs><linearGradient id="ouro" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--ouro-claro)"/><stop offset=".5" style="stop-color:var(--ouro)"/><stop offset="1" style="stop-color:var(--cor)"/></linearGradient></defs>
-</svg>
-<main class="pagina" id="app" aria-live="polite">
-  <p class="carregando">Carregando seu pedido…</p>
-</main>
-<noscript><p style="text-align:center;padding:20px">Ative o JavaScript para acompanhar o pedido.</p></noscript>
 
-<script src="config.js?v=5"></script>
-<script src="assets/comum.js?v=5"></script>
+<header class="barra-topo">
+  <div class="faixa-larga">
+    <a class="marca-topo" href="./"><img src="assets/logo.webp" alt="" width="38" height="45">StudioCT 3D</a>
+    <nav class="nav" aria-label="Seções da página">
+      <a href="#como-funciona">Como funciona</a>
+      <a href="#recursos">Recursos</a>
+      <a href="#duvidas">Dúvidas</a>
+    </nav>
+    <a class="btn btn-cor" href="administrador/">Área de membros</a>
+  </div>
+</header>
+
+<main>
+  <section class="abertura">
+    <div class="faixa-larga palco" id="demonstracao">
+      <div class="lado-painel">
+        <div>
+      <span class="selinho"><i></i>Para estúdios de impressão 3D</span>
+      <h1>Seu cliente acompanha o pedido <em>sozinho.</em></h1>
+      <p class="lead">Você manda um link uma vez. Ele vê a produção andando, o prazo e o valor a pagar. E você para de responder “já ficou pronto?” o dia inteiro.</p>
+      <div class="acoes-topo">
+        <a class="btn btn-cor btn-grande" href="administrador/#criar">Criar minha conta</a>
+        <a class="entrar" href="administrador/">Já tenho conta: entrar</a>
+      </div>
+      <ul class="garantias">
+        <li>Sem instalar nada</li>
+        <li>Funciona no celular</li>
+        <li>Com a sua logo e as suas cores</li>
+      </ul>
+        </div>
+          <div class="rotulo-palco" style="margin-top:14px"><b>1</b>Você toca aqui, no seu painel</div>
+          <article class="cartao painel-demo" id="painelDemo" aria-live="polite"></article>
+          <p class="dica-palco" id="dicaDemo">Esta é uma demonstração de verdade: <b>toque nos botões</b> e veja a página do cliente mudar.</p>
+          <div class="cores-demo" id="coresDemo" role="group" aria-label="Cor da marca na demonstração">Teste com a cor da sua marca:</div>
+        </div>
+        <div>
+          <div class="rotulo-palco" style="margin-bottom:12px"><b>2</b>O cliente vê aqui, no celular dele</div>
+          <div class="fone" id="fone"><div class="tela"><div id="telaDemo"></div></div></div>
+        </div>
+    </div>
+  </section>
+
+  <section class="problema">
+    <div class="faixa-larga dois">
+      <div>
+        <p class="sobre">O problema</p>
+        <h2>Cada pedido vira uma conversa que não acaba.</h2>
+        <p class="lead">Quanto falta? Que dia chega? Qual era o valor mesmo? Enquanto você responde, a impressora espera. Com o link de acompanhamento, o cliente abre e vê tudo: quanto já foi produzido, quando termina e quanto falta pagar.</p>
+      </div>
+      <div class="conversa" aria-hidden="true">
+        <div class="balao">Oi! Meu pedido já ficou pronto?<small>09:12</small></div>
+        <div class="balao">Quanto falta?<small>11:40</small></div>
+        <div class="balao meu">Faltam 15, termino amanhã cedo<small>11:58</small></div>
+        <div class="balao">Consegue mandar uma foto?<small>14:03</small></div>
+        <div class="balao">E qual era o valor mesmo?<small>17:26</small></div>
+        <div class="balao">??<small>21:47</small></div>
+        <span class="conta-msgs">e isso em um pedido só</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="secao creme" id="como-funciona">
+    <div class="faixa-larga">
+      <p class="sobre">Como funciona</p>
+      <h2>Três passos, do pedido à entrega.</h2>
+      <ol class="passos">
+        <li><h3>Cadastre o pedido</h3><p>Título, quantidade e tempo de produção. Leva meio minuto, e cada pedido ganha um número.</p></li>
+        <li><h3>Envie o link</h3><p>Um botão abre o WhatsApp do cliente com a mensagem pronta. Você manda uma vez só.</p></li>
+        <li><h3>Atualize com um toque</h3><p>Terminou uma chapa? Toque em “+1 chapa”. O cliente vê na hora, sempre pelo mesmo link.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="secao" id="recursos">
+    <div class="faixa-larga">
+      <p class="sobre">Recursos</p>
+      <h2>Feito por quem imprime, para quem imprime.</h2>
+      <div class="recursos">
+        <div class="recurso">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 5 5.6.7-4.1 3.8 1.1 5.5L12 15.3 7 18l1.1-5.500L4 8.7 9.6 8z"/></svg>
+          <h3>Com a sua marca</h3><p>A página do cliente leva a sua logo, as suas cores e o nome do seu estúdio.</p>
+        </div>
+        <div class="recurso">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="5" y="14" width="14" height="6" rx="1.5"/><path d="M12 10v4"/></svg>
+          <h3>Calculadora de chapas</h3><p>Diga quantas peças cabem por chapa e o tempo de cada uma. O prazo total sai sozinho.</p>
+        </div>
+        <div class="recurso">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 7.500l4.5-4.5 4.5 4.500M7.5 16.500l4.5 4.5 4.5-4.500M3 12l4.5-4.500L12 12l-4.5 4.500zM12 12l4.5-4.500L21 12l-4.5 4.500z"/></svg>
+          <h3>Pagamento por Pix</h3><p>Sinal para começar e o restante quando fica pronto. O valor e a sua chave aparecem para o cliente, e o dinheiro cai direto na sua conta.</p>
+        </div>
+        <div class="recurso">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10v9H4zM14 10h3.500L20 13v3h-6"/><circle cx="8" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/></svg>
+          <h3>Entrega, Correios ou retirada</h3><p>Cada pedido mostra o prazo certo para o tipo de envio, com os prazos que você definir.</p>
+        </div>
+        <div class="recurso">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14M5 15h14M10 4L8 20M16 4l-2 16"/></svg>
+          <h3>Número do pedido</h3><p>O cliente informa o número, você digita na busca e o pedido aparece na hora.</p>
+        </div>
+        <div class="recurso">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.500h2"/></svg>
+          <h3>No celular, sem instalar</h3><p>Você atualiza do lado da impressora. O cliente só abre o link no navegador: ele não precisa de conta.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="secao creme" id="duvidas">
+    <div class="faixa-larga">
+      <p class="sobre">Dúvidas</p>
+      <h2>Perguntas que todo mundo faz.</h2>
+      <div class="duvidas">
+        <details><summary>Preciso instalar alguma coisa?</summary><p>Não. Tudo funciona no navegador, no celular e no computador. Você cria a conta, confirma o e-mail e já pode cadastrar o primeiro pedido.</p></details>
+        <details><summary>O meu cliente precisa criar conta?</summary><p>Não. Ele só abre o link que você envia. O link é secreto: só quem recebeu consegue ver o pedido.</p></details>
+        <details><summary>Como eu recebo o pagamento?</summary><p>Direto na sua conta. A página mostra o valor e a sua chave Pix para o cliente copiar. O dinheiro não passa pela ferramenta: quando ele cair, você marca “pagamento recebido” no painel.</p></details>
+        <details><summary>Quanto custa?</summary><p>Estamos em fase de lançamento: criar a conta e usar é gratuito por enquanto. Se isso mudar, quem já usa é avisado antes.</p></details>
+        <details><summary>Posso cobrar um sinal antes de começar?</summary><p>Pode. Você define a porcentagem (40%, por exemplo) e a página mostra ao cliente quanto pagar agora e quanto fica para quando o pedido estiver pronto. Se você cobra tudo só no final, é só deixar o sinal em zero.</p></details>
+        <details><summary>Serve só para impressão 3D?</summary><p>Foi feita para estúdios de impressão 3D, com direito a calculadora de chapas. Mas quem trabalha com qualquer produção sob encomenda consegue usar do mesmo jeito.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="faixa-larga">
+      <h2>Monte o seu painel em dois minutos.</h2>
+      <p>Crie a conta, coloque a sua logo e mande o primeiro link ainda hoje.</p>
+      <a class="btn btn-cor btn-grande" href="administrador/#criar">Criar minha conta</a>
+    </div>
+  </section>
+</main>
+
+<footer class="rodape-site">
+  <div class="faixa-larga"><span>StudioCT 3D · Acompanhamento de pedidos para estúdios de impressão 3D</span><a href="administrador/">Área de membros</a></div>
+</footer>
+
+<script src="config.js?v=6"></script>
+<script src="assets/comum.js?v=6"></script>
+<script src="assets/pedido.js?v=6"></script>
 <script>
+/* Demonstração: um pedido de mentira. Os botões do "painel" mudam o pedido e a tela do "cliente" é a mesma da página real. */
 (() => {
   'use strict';
   const { el, nf } = CT;
-  const app = document.getElementById('app');
-  const curto = location.pathname.match(/\/p\/([^/]+)\/?$/);
-  const codigo = decodeURIComponent((curto && curto[1]) || new URLSearchParams(location.search).get('p') || location.hash.replace(/^#/, '') || '').trim();
-  let ultimo = null, diferencaRelogio = 0;
+  const painel = document.getElementById('painelDemo'), tela = document.getElementById('telaDemo'), fone = document.getElementById('fone');
+  const R = CT.dinheiro, HORA = 3600000;
+  const POR_CHAPA = 10, H_CHAPA = 2;
+  const inicial = () => ({ feitos: 0, etapa: 'fila', sinal_pago: false, quitado: false });
+  let d = inicial(), automatico = true, relogio = null, cor = CT.COR_PADRAO;
+  const QTD = 40, VALOR = 150, FRETE = 20, SINAL = 40;
 
-  let estudio = null, logoGuardada = { md5: null, logo: '' };
-  const topo = () => el('header', { class: 'topo' },
-    estudio ? CT.logoEstudio(estudio, 104) : null,
-    estudio && !/^assets\//.test(estudio.logo || '') ? el('strong', { text: estudio.nome }) : null,
-    el('small', { text: 'Acompanhamento do pedido' }));
-
-  function semPedido(titulo, texto) {
-    document.title = estudio ? `${titulo} | ${estudio.nome}` : titulo;
-    app.replaceChildren(topo(), el('div', { class: 'cartao vazio' }, el('h1', { text: titulo }), el('p', { text: texto })));
+  function pedido() {
+    const faltamChapas = Math.ceil((QTD - d.feitos) / POR_CHAPA);
+    return {
+      numero: 1027, titulo: 'Chaveiros da formatura', tipo: 'Brinde', cliente: 'Pedro', quantidade: QTD, feitos: d.feitos, etapa: d.etapa, envio: 'correios',
+      termino: new Date(Date.now() + Math.max(1, faltamChapas) * H_CHAPA * HORA).toISOString(), mensagem: '', atualizado_em: new Date().toISOString(), whatsapp: '', ritmo_horas: null,
+      pagamento: { valor: VALOR, frete: FRETE, sinal_pct: SINAL, sinal_pago: d.sinal_pago, quitado: d.quitado, pix_chave: '12.345.678/0001-90', pix_nome: 'Seu Estúdio 3D' },
+      estudio: { nome: 'Seu Estúdio 3D', logo: '', cor, prazo_entrega: 'de 2 a 5 dias corridos', prazo_correios: '2 a 3 dias úteis' }
+    };
   }
 
-  function anel(pct) {
-    const r = 50, c = 2 * Math.PI * r;
-    const svg = new DOMParser().parseFromString(
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 118 118" aria-hidden="true"><circle class="fundo" cx="59" cy="59" r="${r}"/><circle class="valor" cx="59" cy="59" r="${r}" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - pct / 100)}"/></svg>`, 'image/svg+xml').documentElement;
-    return el('div', { class: 'anel', role: 'img', 'aria-label': `${pct}% pronto` }, document.importNode(svg, true), el('b', { text: `${pct}%` }));
+  const acoes = {
+    sinal() { d.sinal_pago = true; d.etapa = 'producao'; },
+    mais1() { somar(1); },
+    chapa() { somar(POR_CHAPA); },
+    pronto() { d.feitos = QTD; d.etapa = 'pronto'; },
+    pago() { d.quitado = true; },
+    entregue() { d.etapa = 'entregue'; },
+    denovo() { d = inicial(); }
+  };
+  function somar(n) { d.feitos = Math.min(QTD, d.feitos + n); if (d.feitos >= QTD) d.etapa = 'pronto'; }
+
+  function botao(id, texto, classe) {
+    return el('button', { class: 'btn ' + (classe || ''), type: 'button', 'data-acao': id, text: texto, onclick: () => { automatico = false; clearTimeout(relogio); aplicar(id, true); } });
   }
-
-  function desenhar(p) {
-    ultimo = p;
-    if (!estudio || JSON.stringify(estudio) !== JSON.stringify(p.estudio)) {
-      estudio = p.estudio || { nome: '' };
-      CT.aplicarCor(estudio.cor); CT.iconeAba(estudio);
-    }
-    const agora = Date.now() + diferencaRelogio;
-    const tipos = CT.envios(estudio);
-    const envio = tipos[p.envio] || tipos.entrega;
-    document.title = `${p.titulo} | ${estudio.nome}`;
-    const pct = Math.floor(p.feitos / p.quantidade * 100);
-    const faltam = p.quantidade - p.feitos;
-    const etapa = ['pausado', 'acabamento'].includes(p.etapa) ? 'producao' : p.etapa;
-    const pronto = etapa === 'pronto' || etapa === 'entregue';
-
-    // Etapas: Na fila → Em produção → Pronto → Entregue/Postado/Retirado
-    const iAtual = CT.ETAPAS.indexOf(etapa);
-    const etapas = el('ol', { class: 'etapas', 'aria-label': 'Etapas do pedido' },
-      CT.ETAPAS.map((e, i) => {
-        const feita = i < iAtual || (i === iAtual && e === 'entregue');
-        return el('li', { class: feita ? 'feita' : i === iAtual ? 'atual' : '', 'aria-current': i === iAtual ? 'step' : null },
-          el('span', { class: 'bola', text: feita ? '✓' : '' }), CT.nomeEtapa(e, p.envio));
-      }));
-
-    let faixa = null;
-    if (etapa === 'cancelado') faixa = el('div', { class: 'faixa perigo', text: 'Este pedido foi cancelado. Fale com a gente se tiver dúvidas.' });
-    else if (etapa === 'pronto') faixa = el('div', { class: 'faixa ok', text: envio.prontoMsg });
-    else if (etapa === 'entregue') faixa = el('div', { class: 'faixa ok', text: envio.fimMsg });
-
-    // Produção e envio
-    let producao = null;
-    if (!pronto && etapa !== 'cancelado') {
-      const resta = CT.data(p.termino).getTime() - agora;
-      const atraso = resta < 0;
-      producao = el('section', { class: 'cartao bloco' },
-        el('h2', { text: 'Término previsto da produção' }),
-        el('div', { class: 'data-grande', text: CT.quando(p.termino) }),
-        el('div', { class: 'contagem' + (atraso ? ' atraso' : ''), text: atraso ? 'A produção está levando um pouco mais que o previsto. Já já atualizamos por aqui.' : `Faltam ${CT.duracao(resta)}` }),
-        p.ritmo_horas ? el('p', { class: 'detalhe' }, 'No ritmo atual, ', el('b', { text: `${nf.format(faltam)} restante${faltam === 1 ? '' : 's'} em cerca de ${CT.duracao(Number(p.ritmo_horas) * 3600000)}` }), '.') : null,
-        el('hr', { class: 'divisor' }),
-        el('h2', { text: p.envio === 'retirada' ? 'Retirada' : 'Entrega' }),
-        el('p', { class: 'detalhe', style: 'margin:0' }, el('b', { text: envio.nome + ': ' }), envio.prazo));
-    }
-
-    const recado = p.mensagem && p.mensagem.trim()
-      ? el('section', { class: 'cartao bloco recado' }, el('h2', { text: estudio.nome ? `Recado de ${estudio.nome}` : 'Recado' }), el('p', { text: p.mensagem }))
-      : null;
-
-    const whats = p.whatsapp
-      ? el('a', { class: 'btn btn-cor btn-whats', href: CT.linkWhats(p.whatsapp, p.numero ? `Oi, tudo bem? Meu pedido é o nº ${p.numero} (${p.titulo}).` : `Oi, tudo bem? Meu pedido é "${p.titulo}".`), target: '_blank', rel: 'noopener noreferrer' }, 'Falar com a gente no WhatsApp')
-      : null;
-
-    app.replaceChildren(...[
-      topo(),
-      el('section', { class: 'cartao' },
-        el('div', { class: 'linha-tag' }, p.tipo ? el('span', { class: 'tipo', text: p.tipo }) : el('span'),
-          p.numero ? el('span', { class: 'numero', text: `Pedido nº ${p.numero}` }) : null),
-        el('h1', { class: 'titulo', text: p.titulo }),
-        p.cliente ? el('p', { class: 'ola', text: `Olá, ${p.cliente}! Veja como está o seu pedido.` }) : null,
-        el('div', { class: 'progresso' }, anel(pct),
-          el('div', { class: 'numeros' },
-            el('div', { class: 'num' }, el('span', { text: 'Prontos' }), el('b', { text: nf.format(p.feitos) })),
-            el('div', { class: 'num' }, el('span', { text: 'Faltam' }), el('b', { text: nf.format(faltam) })),
-            el('div', { class: 'num' }, el('span', { text: 'Total do pedido' }), el('b', { text: nf.format(p.quantidade) }))))),
-      faixa,
-      etapa === 'cancelado' ? null : el('section', { class: 'cartao' }, etapas),
-      producao, recado, whats,
-      el('p', { class: 'rodape', text: `Atualizado ${CT.relativo(p.atualizado_em, agora)} · esta página se atualiza sozinha` })
+  function desenharPainel() {
+    const g = CT.pagamento(pedido().pagamento), pct = Math.floor(d.feitos / QTD * 100);
+    const esperaSinal = d.etapa === 'fila', devePagar = d.etapa === 'pronto' && !d.quitado;
+    const selo = esperaSinal ? ['pausado', 'Aguardando sinal'] : devePagar ? ['pausado', 'Aguardando pagamento'] : d.etapa === 'producao' ? ['producao', 'Em produção'] : d.etapa === 'pronto' ? ['pronto', 'Pronto'] : ['entregue', 'Postado'];
+    const chapa = Math.min(QTD / POR_CHAPA, Math.floor(d.feitos / POR_CHAPA) + 1);
+    painel.replaceChildren(...[
+      el('div', { class: 'cabeca-p' },
+        el('div', {}, el('h3', { text: 'Chaveiros da formatura' }), el('div', { class: 'sub' }, el('b', { text: 'nº 1027' }), ' · Pedro · Brinde · Correios')),
+        el('span', { class: 'selo selo-' + selo[0] }, el('i'), selo[1])),
+      el('div', { class: 'barra', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(QTD), 'aria-valuenow': String(d.feitos), 'aria-label': `${pct}% pronto` }, el('span', { style: `width:${pct}%` })),
+      el('div', { class: 'meta' },
+        el('span', {}, el('b', { text: `${d.feitos} de ${QTD}` }), ` prontos · ${pct}%`),
+        d.etapa === 'producao' ? el('span', { text: `Chapa ${chapa} de ${QTD / POR_CHAPA} · ${POR_CHAPA} por chapa` }) : esperaSinal ? el('span', { text: 'Começa quando o sinal chegar' }) : null),
+      el('div', { class: 'pg' }, el('b', { text: R(g.geral) }), ' com frete · ',
+        g.quitado ? el('span', { style: 'color:var(--verde-escuro);font-weight:700', text: 'pago ✓' })
+          : [g.sinalPago ? `sinal de ${R(g.sinal)} recebido ✓` : `aguardando sinal de ${R(g.sinal)}`, ' · a receber ', el('b', { text: R(g.aReceber) })]),
+      el('div', { class: 'acoes' },
+        esperaSinal ? botao('sinal', `✓ Sinal recebido (${R(g.sinal)})`, 'btn-verde grande') : null,
+        d.etapa === 'producao' ? [botao('mais1', '+1'), botao('chapa', `+1 chapa (${POR_CHAPA})`), botao('pronto', '✓ Pronto', 'btn-cor grande')] : null,
+        devePagar ? botao('pago', `✓ Pagamento recebido (${R(g.aReceber)})`, 'btn-verde grande') : null,
+        d.etapa === 'pronto' && d.quitado ? botao('entregue', '✓ Marcar como postado', 'btn-cor grande') : null,
+        d.etapa === 'entregue' ? botao('denovo', '↺ Recomeçar a demonstração', 'grande') : null)
     ].filter(Boolean));
   }
-
-  async function carregar(primeira) {
-    if (!CT.configurado) return semPedido('Página em configuração', 'Estamos configurando o acompanhamento.');
-    if (codigo.length < 12) return semPedido('Link incompleto', 'Confira se você abriu o link inteiro que enviamos.');
-    try {
-      const corpo = { p_codigo: codigo };
-      if (logoGuardada.md5) corpo.p_logo_tenho = logoGuardada.md5;
-      const p = await CT.pedir('/rest/v1/rpc/ct_pedido_publico', { metodo: 'POST', corpo });
-      if (p && p.estudio) {
-        // A logo só vem do servidor na primeira vez (ou quando o estúdio troca de logo).
-        if (p.estudio.logo == null && p.estudio.logo_md5 === logoGuardada.md5) p.estudio.logo = logoGuardada.logo;
-        else logoGuardada = { md5: p.estudio.logo_md5 || null, logo: p.estudio.logo || '' };
-      }
-      if (!p) return semPedido('Pedido não encontrado', 'Este link não corresponde a nenhum pedido. Peça o link de novo para a gente.');
-      diferencaRelogio = CT.data(p.agora).getTime() - Date.now();
-      desenhar(p);
-    } catch (e) {
-      if (primeira || !ultimo) semPedido('Não deu para carregar agora', e.status === 0 ? 'Sem conexão. Verifique a internet e tente de novo.' : 'Tente de novo em instantes.');
+  function desenharTela() {
+    CT.telaPedido(tela, pedido(), { demo: true });
+  }
+  function aplicar(id, doUsuario) {
+    const etapaAntes = d.etapa, pagoAntes = d.quitado;
+    acoes[id]();
+    desenharPainel(); desenharTela();
+    // Mudou de fase (pronto, pago...): a tela do celular volta ao começo para mostrar a novidade.
+    if (d.etapa !== etapaAntes || d.quitado !== pagoAntes) tela.parentNode.scrollTo({ top: 0, behavior: 'smooth' });
+    // No celular, o "aparelho" fica abaixo do painel: depois do toque, traz ele para a vista.
+    if (doUsuario && matchMedia('(max-width: 880px)').matches) {
+      const r = fone.getBoundingClientRect();
+      if (r.top > innerHeight * .55) fone.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }
-  carregar(true);
-  // O mesmo link mostra sempre a situação atual: atualiza sozinho a cada 30 s e ao voltar para a página.
-  setInterval(() => { if (document.visibilityState === 'visible') carregar(false); }, 30000);
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') carregar(false); });
+
+  // Sozinha, a demonstração toca os botões na ordem até o pedido ficar pago. Qualquer toque seu assume o controle.
+  const roteiro = [['sinal', 1700], ['chapa', 2100], ['chapa', 1900], ['chapa', 1900], ['chapa', 1900], ['pago', 3400]];
+  function tocar(i) {
+    if (!automatico || i >= roteiro.length) return;
+    const [id, espera] = roteiro[i];
+    relogio = setTimeout(() => {
+      if (!automatico) return;
+      const b = painel.querySelector(`[data-acao="${id}"]`);
+      if (b) { b.classList.add('toque'); setTimeout(() => { if (automatico) { aplicar(id, false); tocar(i + 1); } }, 380); }
+    }, espera);
+  }
+
+  // Cor da marca: muda só dentro do celular da demonstração.
+  const CORES = [['#B8862B', 'Dourado'], ['#2F6FB0', 'Azul'], ['#D9622B', 'Laranja'], ['#B42357', 'Vinho'], ['#6D3FC4', 'Roxo'], ['#3F4652', 'Grafite']];
+  const caixaCores = document.getElementById('coresDemo');
+  function desenharCores() {
+    caixaCores.replaceChildren('Teste com a cor da sua marca:', ...CORES.map(([c, n]) =>
+      el('button', { type: 'button', style: `background:${c}`, 'aria-label': n, title: n, 'aria-pressed': String(c === cor), onclick: () => { cor = c; CT.aplicarCor(c, fone); desenharCores(); desenharTela(); } })));
+  }
+
+  desenharCores(); desenharPainel(); desenharTela();
+  const semMovimento = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (semMovimento) { automatico = false; acoes.sinal(); acoes.chapa(); acoes.chapa(); desenharPainel(); desenharTela(); }
+  else if ('IntersectionObserver' in window) {
+    // Só começa quando a demonstração aparece na tela.
+    const olho = new IntersectionObserver(v => { if (v.some(x => x.isIntersecting)) { olho.disconnect(); tocar(0); } }, { threshold: .35 });
+    olho.observe(painel); olho.observe(fone);
+  } else tocar(0);
 })();
 </script>
 </body>
