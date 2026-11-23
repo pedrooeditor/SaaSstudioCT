@@ -556,6 +556,286 @@ revoke all on function public.ct_foto(uuid) from public;
 grant execute on function public.ct_foto(uuid) to authenticated;
 
 -- =====================================================================
+-- Versão 7: assinatura dos estúdios (Cakto).
+-- Cada estúdio tem "acesso até". Teste grátis, pagamento aprovado e renovação empurram essa data;
+-- reembolso e chargeback cortam na hora. O estúdio do dono da plataforma é isento.
+-- Os links dos clientes nunca são bloqueados: só o painel do estúdio.
+-- =====================================================================
+alter table public.ct_estudios add column if not exists isento boolean not null default false;
+alter table public.ct_estudios add column if not exists acesso_ate timestamptz;
+alter table public.ct_estudios add column if not exists assinatura_status text not null default 'nenhuma';
+alter table public.ct_estudios add column if not exists assinatura_token text;
+alter table public.ct_estudios add column if not exists cakto_assinatura text;
+alter table public.ct_estudios add column if not exists assinatura_atualizada_em timestamptz;
+alter table public.ct_estudios drop constraint if exists ct_assinatura_status_valido;
+alter table public.ct_estudios add constraint ct_assinatura_status_valido check (
+  assinatura_status in ('nenhuma', 'teste', 'ativa', 'atrasada', 'cancelada', 'reembolsada'));
+update public.ct_estudios set assinatura_token = encode(extensions.gen_random_bytes(12), 'hex') where assinatura_token is null;
+alter table public.ct_estudios alter column assinatura_token set default encode(extensions.gen_random_bytes(12), 'hex');
+create unique index if not exists ct_estudios_token on public.ct_estudios (assinatura_token);
+create index if not exists ct_estudios_cakto on public.ct_estudios (cakto_assinatura);
+-- O estúdio de quem é dono da plataforma não paga.
+update public.ct_estudios e set isento = true
+where not e.isento and exists (select 1 from public.ct_membros m join public.ct_admins a on a.email = m.email where m.estudio_id = e.id);
+-- Estúdios que já existiam antes da cobrança ganham 30 dias para se acostumar (uma vez só).
+update public.ct_estudios set acesso_ate = now() + interval '30 days', assinatura_status = 'teste'
+where not isento and acesso_ate is null and assinatura_status = 'nenhuma' and criado_em < '2026-11-24';
+
+-- Configuração da cobrança (uma linha só). O segredo do webhook nunca sai do banco para o navegador.
+create table if not exists public.ct_plataforma (
+  id int primary key default 1 check (id = 1),
+  dias_teste integer not null default 0 check (dias_teste between 0 and 90),
+  dias_tolerancia integer not null default 3 check (dias_tolerancia between 0 and 30),
+  cakto_checkout text not null default '' check (cakto_checkout = '' or cakto_checkout ~ '^https://[a-z0-9.-]+\.[a-z]{2,}(/[A-Za-z0-9._~/-]*)?$'),
+  cakto_segredo text not null default '' check (char_length(cakto_segredo) <= 200),
+  atualizado_em timestamptz not null default now()
+);
+insert into public.ct_plataforma (id) values (1) on conflict do nothing;
+alter table public.ct_plataforma enable row level security;
+revoke all on public.ct_plataforma from anon, authenticated;
+
+-- Tudo o que a Cakto mandou fica registrado (sem o segredo). Eventos de quem ainda não tem estúdio
+-- ficam pendentes e são aplicados quando a pessoa cria a conta com o mesmo e-mail.
+create table if not exists public.ct_cakto_eventos (
+  id bigint generated always as identity primary key,
+  recebido_em timestamptz not null default now(),
+  evento text not null,
+  pedido_id text not null default '',
+  email text not null default '',
+  assinatura_id text not null default '',
+  callback text not null default '',
+  estudio_id uuid references public.ct_estudios (id) on delete set null,
+  resultado text not null default '',
+  dados jsonb not null default '{}'::jsonb
+);
+create index if not exists ct_cakto_eventos_email on public.ct_cakto_eventos (email) where estudio_id is null;
+create unique index if not exists ct_cakto_eventos_unico on public.ct_cakto_eventos (evento, pedido_id) where pedido_id <> '';
+alter table public.ct_cakto_eventos enable row level security;
+revoke all on public.ct_cakto_eventos from anon, authenticated;
+
+-- Tem acesso ao painel? (isento, ou "acesso até" no futuro). "ativo = false" é a pausa manual do dono.
+create or replace function public.ct_tem_acesso(e public.ct_estudios) returns boolean language sql stable as $$
+  select e.ativo and (e.isento or (e.acesso_ate is not null and e.acesso_ate > now()));
+$$;
+
+-- Estúdio da conta conectada, só se ativo e com acesso em dia. Sem isso, o banco não mostra nem grava pedidos.
+create or replace function public.ct_meu_estudio()
+returns uuid language sql stable security definer set search_path = public, extensions as $$
+  select m.estudio_id from ct_membros m join ct_estudios e on e.id = m.estudio_id
+  where m.email = ct_email() and ct_tem_acesso(e);
+$$;
+
+-- Situação da assinatura, para o painel do estúdio (inclui o link de pagamento só daquele estúdio).
+create or replace function public.ct_assinatura_json(e public.ct_estudios) returns json language sql stable
+set search_path = public, extensions as $$
+  select json_build_object('isento', e.isento, 'status', e.assinatura_status, 'acesso_ate', e.acesso_ate,
+    'tem_acesso', ct_tem_acesso(e), 'agora', now(),
+    'checkout', case when c.cakto_checkout = '' then '' else c.cakto_checkout || '?callback=' || e.assinatura_token end)
+  from ct_plataforma c where c.id = 1;
+$$;
+
+create or replace function public.ct_minha_conta()
+returns json language sql stable security definer set search_path = public, extensions as $$
+  select json_build_object('email', ct_email(), 'dono_plataforma', ct_eh_admin(),
+    'estudio', (select ct_estudio_json(e) from ct_membros m join ct_estudios e on e.id = m.estudio_id where m.email = ct_email()),
+    'assinatura', (select ct_assinatura_json(e) from ct_membros m join ct_estudios e on e.id = m.estudio_id where m.email = ct_email()));
+$$;
+
+-- Aplica um evento da Cakto num estúdio. Devolve o que fez (fica no registro).
+create or replace function public.ct_srv_cakto_aplicar(p_estudio uuid, p_evento text, p_dados jsonb)
+returns text language plpgsql security definer set search_path = public, extensions as $$
+declare
+  e ct_estudios; tol interval; prox timestamptz; dias int; sub_id text;
+begin
+  select * into e from ct_estudios where id = p_estudio for update;
+  if not found then return 'estúdio não existe'; end if;
+  select make_interval(days => dias_tolerancia) into tol from ct_plataforma where id = 1;
+  sub_id := coalesce(p_dados #>> '{subscription,id}', '');
+  prox := nullif(p_dados #>> '{subscription,next_payment_date}', '')::timestamptz;
+  dias := coalesce(nullif(p_dados #>> '{subscription,recurrence_period}', '')::int, 30);
+
+  if p_evento in ('purchase_approved', 'subscription_renewed', 'subscription_created', 'subscription_late_recovered', 'subscription_resumed') then
+    if p_evento in ('subscription_created', 'subscription_resumed') and coalesce(p_dados ->> 'status', 'paid') <> 'paid' and prox is null then
+      update ct_estudios set cakto_assinatura = coalesce(nullif(sub_id, ''), cakto_assinatura), assinatura_atualizada_em = now() where id = e.id;
+      return 'assinatura registrada';
+    end if;
+    -- Pago: acesso até a próxima cobrança (ou um período a partir de agora), mais a tolerância.
+    update ct_estudios set
+      acesso_ate = greatest(coalesce(acesso_ate, now()), coalesce(prox, now() + make_interval(days => dias)) + tol),
+      assinatura_status = 'ativa', cakto_assinatura = coalesce(nullif(sub_id, ''), cakto_assinatura), assinatura_atualizada_em = now()
+    where id = e.id;
+    return 'acesso liberado';
+  elsif p_evento in ('subscription_late', 'subscription_renewal_refused') then
+    update ct_estudios set assinatura_status = 'atrasada', assinatura_atualizada_em = now() where id = e.id;
+    return 'marcado como atrasado (acesso segue até ' || to_char(e.acesso_ate at time zone 'America/Sao_Paulo', 'DD/MM HH24:MI') || ')';
+  elsif p_evento in ('subscription_canceled', 'subscription_paused') then
+    update ct_estudios set assinatura_status = 'cancelada', assinatura_atualizada_em = now() where id = e.id;
+    return 'cancelado (acesso segue até o fim do período pago)';
+  elsif p_evento in ('refund', 'chargeback') then
+    update ct_estudios set assinatura_status = 'reembolsada', acesso_ate = least(coalesce(acesso_ate, now()), now()), assinatura_atualizada_em = now()
+    where id = e.id and not isento;
+    return 'acesso cortado (reembolso ou chargeback)';
+  end if;
+  return 'evento ignorado';
+end;
+$$;
+
+-- Recebe um evento da Cakto (chamado só pela função do servidor, com a chave de serviço).
+create or replace function public.ct_srv_cakto_receber(p_evento text, p_dados jsonb)
+returns json language plpgsql security definer set search_path = public, extensions as $$
+declare
+  v_email text := lower(btrim(coalesce(p_dados #>> '{customer,email}', '')));
+  v_cb text := coalesce(p_dados ->> 'callback', '');
+  v_sub text := coalesce(p_dados #>> '{subscription,id}', '');
+  v_pedido text := coalesce(p_dados ->> 'id', '');
+  v_estudio uuid; v_id bigint; v_res text;
+begin
+  if p_evento is null or p_evento = '' then return json_build_object('ok', false, 'motivo', 'sem evento'); end if;
+  -- Mesmo evento do mesmo pedido já processado (a Cakto reenvia quando demora): ignora.
+  if v_pedido <> '' and exists (select 1 from ct_cakto_eventos where evento = p_evento and pedido_id = v_pedido) then
+    return json_build_object('ok', true, 'repetido', true);
+  end if;
+  -- Qual estúdio: pelo código do link de pagamento, pela assinatura já conhecida ou pelo e-mail da conta.
+  if v_cb <> '' then select id into v_estudio from ct_estudios where assinatura_token = v_cb; end if;
+  if v_estudio is null and v_sub <> '' then select id into v_estudio from ct_estudios where cakto_assinatura = v_sub limit 1; end if;
+  if v_estudio is null and v_email <> '' then select estudio_id into v_estudio from ct_membros where email = v_email; end if;
+
+  insert into ct_cakto_eventos (evento, pedido_id, email, assinatura_id, callback, estudio_id, dados)
+  values (p_evento, v_pedido, v_email, v_sub, v_cb, v_estudio, p_dados - 'secret')
+  on conflict do nothing returning id into v_id;
+  if v_id is null then return json_build_object('ok', true, 'repetido', true); end if;
+
+  if v_estudio is null then
+    update ct_cakto_eventos set resultado = 'pendente: ninguém com este e-mail ainda' where id = v_id;
+    return json_build_object('ok', true, 'pendente', true);
+  end if;
+  v_res := ct_srv_cakto_aplicar(v_estudio, p_evento, p_dados);
+  update ct_cakto_eventos set resultado = v_res where id = v_id;
+  return json_build_object('ok', true, 'resultado', v_res);
+end;
+$$;
+
+-- Pagamentos feitos antes de a pessoa criar a conta: aplica quando o estúdio dela nasce (ou quando ela entra num).
+create or replace function public.ct_srv_cakto_pendentes(p_estudio uuid, p_email text)
+returns void language plpgsql security definer set search_path = public, extensions as $$
+declare ev record;
+begin
+  for ev in select * from ct_cakto_eventos where estudio_id is null and email = lower(btrim(p_email)) order by recebido_em loop
+    update ct_cakto_eventos set estudio_id = p_estudio, resultado = 'aplicado depois: ' || ct_srv_cakto_aplicar(p_estudio, ev.evento, ev.dados) where id = ev.id;
+  end loop;
+end;
+$$;
+
+-- Segredo do webhook, só para a função do servidor.
+create or replace function public.ct_srv_cakto_segredo()
+returns text language sql stable security definer set search_path = public, extensions as $$
+  select cakto_segredo from ct_plataforma where id = 1;
+$$;
+
+-- Conta nova cria o próprio estúdio: começa no teste grátis (se houver) e recebe pagamentos feitos antes.
+create or replace function public.ct_criar_meu_estudio(p_nome text, p_whatsapp text default '')
+returns json language plpgsql security definer set search_path = public, extensions as $$
+declare novo ct_estudios; em text := ct_email(); teste int;
+begin
+  if em = '' then raise exception 'Sem permissão' using errcode = '42501'; end if;
+  if exists (select 1 from ct_membros where email = em) then
+    raise exception 'Esta conta já está em um estúdio' using errcode = '23505';
+  end if;
+  select dias_teste into teste from ct_plataforma where id = 1;
+  insert into ct_estudios (nome, whatsapp, isento, acesso_ate, assinatura_status)
+  values (btrim(p_nome), coalesce(p_whatsapp, ''), ct_eh_admin(),
+    case when coalesce(teste, 0) > 0 then now() + make_interval(days => teste) end,
+    case when coalesce(teste, 0) > 0 then 'teste' else 'nenhuma' end)
+  returning * into novo;
+  insert into ct_membros (email, estudio_id) values (em, novo.id);
+  perform ct_srv_cakto_pendentes(novo.id, em);
+  select * into novo from ct_estudios where id = novo.id;
+  return ct_estudio_json(novo);
+end;
+$$;
+
+-- Painel do dono: lista com a situação da assinatura de cada estúdio.
+create or replace function public.ct_plat_estudios()
+returns json language plpgsql stable security definer set search_path = public, extensions as $$
+begin
+  perform ct_plat_checar();
+  return coalesce((select json_agg(x order by x.criado_em) from (
+    select e.id, e.nome, e.ativo, e.criado_em, (e.logo <> '') as tem_logo,
+      e.isento, e.acesso_ate, e.assinatura_status, ct_tem_acesso(e) as tem_acesso, e.cakto_assinatura <> '' and e.cakto_assinatura is not null as na_cakto,
+      coalesce((select json_agg(m.email order by m.criado_em) from ct_membros m where m.estudio_id = e.id), '[]') as pessoas,
+      (select count(*) from ct_pedidos p where p.estudio_id = e.id) as pedidos,
+      (select count(*) from ct_pedidos p where p.estudio_id = e.id and p.criado_em > now() - interval '30 days') as pedidos_30d,
+      (select count(*) from ct_pedidos p where p.estudio_id = e.id and p.etapa not in ('pronto','entregue','cancelado')) as em_andamento,
+      (select max(p.criado_em) from ct_pedidos p where p.estudio_id = e.id) as ultimo_pedido,
+      (select max(p.atualizado_em) from ct_pedidos p where p.estudio_id = e.id) as ultima_atualizacao
+    from ct_estudios e) x), '[]');
+end;
+$$;
+
+-- Dono cria um estúdio para alguém: começa com os mesmos dias de teste de quem se cadastra sozinho.
+create or replace function public.ct_plat_criar_estudio(p_nome text, p_email text)
+returns uuid language plpgsql security definer set search_path = public, extensions as $$
+declare novo uuid; teste int;
+begin
+  perform ct_plat_checar();
+  if exists (select 1 from ct_membros where email = lower(btrim(p_email))) then
+    raise exception 'Este e-mail já está em outro estúdio' using errcode = '23505';
+  end if;
+  select dias_teste into teste from ct_plataforma where id = 1;
+  insert into ct_estudios (nome, acesso_ate, assinatura_status)
+  values (btrim(p_nome), case when coalesce(teste, 0) > 0 then now() + make_interval(days => teste) end,
+    case when coalesce(teste, 0) > 0 then 'teste' else 'nenhuma' end)
+  returning id into novo;
+  insert into ct_membros (email, estudio_id) values (lower(btrim(p_email)), novo);
+  perform ct_srv_cakto_pendentes(novo, p_email);
+  return novo;
+end;
+$$;
+
+-- Dono: dar dias de acesso na mão (ex.: recebeu por Pix direto) ou isentar um estúdio.
+create or replace function public.ct_plat_dar_acesso(p_id uuid, p_dias integer)
+returns void language plpgsql security definer set search_path = public, extensions as $$
+begin
+  perform ct_plat_checar();
+  if p_dias is null or p_dias < 1 or p_dias > 400 then raise exception 'Dias inválidos' using errcode = '22023'; end if;
+  update ct_estudios set acesso_ate = greatest(coalesce(acesso_ate, now()), now()) + make_interval(days => p_dias),
+    assinatura_status = case when assinatura_status in ('nenhuma', 'teste', 'reembolsada') then 'ativa' else assinatura_status end,
+    assinatura_atualizada_em = now() where id = p_id;
+end;
+$$;
+create or replace function public.ct_plat_isentar(p_id uuid, p_isento boolean)
+returns void language plpgsql security definer set search_path = public, extensions as $$
+begin
+  perform ct_plat_checar();
+  update ct_estudios set isento = coalesce(p_isento, false), assinatura_atualizada_em = now() where id = p_id;
+end;
+$$;
+
+-- Dono: configuração da cobrança. O segredo só é gravado (nunca devolvido); vazio = mantém o atual.
+create or replace function public.ct_plat_cobranca()
+returns json language plpgsql stable security definer set search_path = public, extensions as $$
+begin
+  perform ct_plat_checar();
+  return (select json_build_object('dias_teste', dias_teste, 'dias_tolerancia', dias_tolerancia, 'cakto_checkout', cakto_checkout,
+    'tem_segredo', cakto_segredo <> '',
+    'eventos', coalesce((select json_agg(x order by x.recebido_em desc) from (
+      select ev.recebido_em, ev.evento, ev.email, ev.resultado, es.nome as estudio
+      from ct_cakto_eventos ev left join ct_estudios es on es.id = ev.estudio_id order by ev.recebido_em desc limit 15) x), '[]'))
+    from ct_plataforma where id = 1);
+end;
+$$;
+create or replace function public.ct_plat_salvar_cobranca(p_dias_teste integer, p_dias_tolerancia integer, p_checkout text, p_segredo text)
+returns void language plpgsql security definer set search_path = public, extensions as $$
+begin
+  perform ct_plat_checar();
+  update ct_plataforma set dias_teste = coalesce(p_dias_teste, dias_teste), dias_tolerancia = coalesce(p_dias_tolerancia, dias_tolerancia),
+    cakto_checkout = coalesce(regexp_replace(btrim(p_checkout), '[?#].*$', ''), cakto_checkout),
+    cakto_segredo = coalesce(nullif(btrim(p_segredo), ''), cakto_segredo), atualizado_em = now()
+  where id = 1;
+end;
+$$;
+
+-- =====================================================================
 -- ADMINISTRADORES: troque pelo seu e-mail (em minúsculas).
 -- =====================================================================
 insert into public.ct_admins (email) values ('psimoes2704@gmail.com') on conflict do nothing;
@@ -564,6 +844,9 @@ insert into public.ct_membros (email, estudio_id)
 select a.email, (select id from public.ct_estudios order by criado_em limit 1) from public.ct_admins a
 where exists (select 1 from public.ct_estudios) and not exists (select 1 from public.ct_membros)
 on conflict do nothing;
+-- (o estúdio do dono da plataforma não paga, também numa instalação do zero)
+update public.ct_estudios e set isento = true
+where not e.isento and exists (select 1 from public.ct_membros m join public.ct_admins a on a.email = m.email where m.estudio_id = e.id);
 
 -- Segurança extra: o Supabase libera toda função nova para visitantes sem login (anon).
 -- Todas as funções já conferem quem está pedindo, mas aqui elas ficam fechadas para visitantes,
@@ -574,6 +857,11 @@ begin
   for f in select p.oid::regprocedure as assinatura from pg_proc p join pg_namespace n on n.oid = p.pronamespace
            where n.nspname = 'public' and p.proname like 'ct\_%' and p.proname <> 'ct_pedido_publico' loop
     execute format('revoke execute on function %s from public, anon', f.assinatura);
-    execute format('grant execute on function %s to authenticated', f.assinatura);
+    if f.assinatura::text like 'ct\_srv\_%' then
+      execute format('revoke execute on function %s from authenticated', f.assinatura);
+      execute format('grant execute on function %s to service_role', f.assinatura);
+    else
+      execute format('grant execute on function %s to authenticated', f.assinatura);
+    end if;
   end loop;
 end $$;

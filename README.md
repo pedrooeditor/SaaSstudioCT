@@ -22,6 +22,14 @@ Para incluir outro dono, no Supabase, em **SQL Editor**:
 insert into public.ct_admins (email) values ('email@exemplo.com') on conflict do nothing;
 ```
 
+## Assinatura dos estúdios (Cakto)
+- Cada estúdio tem "acesso até". Sem acesso, o painel mostra só a tela para assinar; os links dos clientes continuam abrindo.
+- A Cakto avisa a função `supabase/functions/cakto-webhook` (publicada sem exigir login), que confere a assinatura HMAC
+  e repassa para o banco (`ct_srv_cakto_receber`). Pagamento e renovação liberam; atraso avisa; reembolso e chargeback cortam.
+- O link de pagamento leva `?callback=<código do estúdio>`, então a compra é ligada ao estúdio mesmo com outro e-mail.
+- Tudo se configura no painel do dono, em **Estúdios › Cobrança (Cakto)**: link do checkout, código secreto do webhook,
+  dias de teste grátis e de tolerância. Lá também aparecem os últimos avisos recebidos e os botões "+30 dias" e "Isentar".
+
 ## E-mails de confirmação
 O cadastro usa o envio de e-mail do próprio Supabase, que no plano gratuito manda poucos e-mails por hora
 e não permite personalizar o texto. Para abrir o cadastro ao público, configure um serviço de e-mail próprio

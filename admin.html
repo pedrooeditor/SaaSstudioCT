@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#F6ECDC">
 <link rel="icon" type="image/svg+xml" href="assets/icone.svg">
-<link rel="stylesheet" href="assets/estilo.css?v=7">
+<link rel="stylesheet" href="assets/estilo.css?v=8">
 <style>
   .pagina { max-width: 980px; margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom)); }
   .topo { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
@@ -161,6 +161,23 @@
     .g-cor { grid-template-columns: 16px minmax(0, 1fr); }
     .g-cor .passo { grid-column: 1 / -1; grid-template-columns: 44px 1fr 44px auto; }
   }
+  /* Assinatura */
+  .faixa-plano { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; margin-bottom: 12px; padding: 12px 14px; border-radius: 14px; background: var(--alerta-bg); color: var(--alerta); font-weight: 650; font-size: 14.5px; }
+  .faixa-plano.ruim { background: var(--perigo-bg); color: var(--perigo); }
+  .faixa-plano.info { background: var(--trilho); color: var(--texto); }
+  .faixa-plano .btn { min-height: 40px; }
+  .plano-caixa { display: grid; gap: 10px; text-align: left; margin-top: 6px; }
+  .plano-caixa .btn { width: 100%; min-height: 52px; font-size: 16px; }
+  .plano-status { display: grid; gap: 4px; padding: 12px 14px; border-radius: 14px; background: var(--fundo); font-size: 14.5px; }
+  .plano-status b { font-size: 16px; }
+  .cobranca { display: grid; gap: 12px; }
+  .cobranca .copiar-linha { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  .cobranca .copiar-linha input { min-width: 0; font-size: 13.5px; }
+  .eventos-cakto { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; font-size: 13.5px; }
+  .eventos-cakto li { padding: 8px 10px; border-radius: 10px; background: var(--fundo); }
+  .eventos-cakto small { color: var(--suave); }
+  .estudio-cartao .plano { font-size: 14px; color: var(--suave); }
+  .estudio-cartao .plano b { color: var(--texto); }
   .aviso button { margin-left: 10px; border: 0; border-radius: 8px; padding: 5px 10px; background: rgb(255 255 255 / .2); color: #fff; font-weight: 700; }
   @media (max-width: 720px) {
     .resumo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -314,12 +331,19 @@
     <p style="margin:0;color:var(--suave);font-size:14px" id="mConta"></p>
     <div class="menu-lista">
       <button class="btn" type="button" id="mConfig">⚙️ Configurações do estúdio</button>
+      <button class="btn" type="button" id="mAssinatura" hidden>💳 Minha assinatura</button>
       <button class="btn" type="button" id="mSugestao">💬 Dar sugestão</button>
       <button class="btn" type="button" id="mPlataforma" hidden>🏢 Estúdios (painel do dono)</button>
       <button class="btn" type="button" id="mPedidos" hidden>📦 Voltar para os meus pedidos</button>
       <button class="btn btn-perigo" type="button" id="btnSair">Sair desta conta</button>
     </div>
   </div>
+</dialog>
+
+<!-- Minha assinatura -->
+<dialog id="dlgAssinatura" aria-labelledby="tAssinatura">
+  <div class="dlg-topo"><h2 id="tAssinatura">Minha assinatura</h2><button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
+  <div class="dlg-corpo" id="aCorpo"></div>
 </dialog>
 
 <!-- Configurações do estúdio -->
@@ -386,8 +410,8 @@
 
 <div class="aviso" id="aviso" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=7"></script>
-<script src="assets/comum.js?v=7"></script>
+<script src="config.js?v=8"></script>
+<script src="assets/comum.js?v=8"></script>
 <script>
 (() => {
   'use strict';
@@ -636,7 +660,7 @@
       el('input', { type: 'search', placeholder: 'Buscar por nº do pedido, cliente ou título', value: vista.busca, oninput: e => { vista.busca = e.target.value; desenharLista(); } }));
     app.replaceChildren(
       cabecalho(CT.logoEstudio(estudio(), 48), estudio().nome, 'Painel de pedidos'),
-      resumo, busca, el('div', { class: 'lista', id: 'lista' }),
+      faixaPlano() || '', resumo, busca, el('div', { class: 'lista', id: 'lista' }),
       el('p', { class: 'mais-sugestao' }, el('button', { class: 'link-txt', type: 'button', text: '💬 Sentiu falta de algo? Dar sugestão', onclick: abrirSugestao })));
     desenharLista();
   }
@@ -1107,12 +1131,83 @@
   $('#btnCopiarMsg').addEventListener('click', () => copiar('#lMsg', 'Mensagem copiada. Cole no WhatsApp do cliente.'));
   $('#btnCopiar').addEventListener('click', () => copiar('#lUrl', 'Link copiado.'));
 
+  /* ---------- assinatura ---------- */
+  const plano = () => (conta && conta.assinatura) || null;
+  const dataCurta = v => CT.data(v).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const diasAte = v => Math.ceil((CT.data(v).getTime() - Date.now()) / 86400000);
+  function textoPlano(a) {
+    if (!a) return { titulo: '', linha: '' };
+    if (a.isento) return { titulo: 'Acesso liberado', linha: 'Este estúdio não paga mensalidade.' };
+    const ate = a.acesso_ate ? dataCurta(a.acesso_ate) : '';
+    const fim = a.acesso_ate && !a.tem_acesso;
+    switch (a.status) {
+      case 'teste': return fim ? { titulo: 'O teste grátis terminou', linha: `Terminou em ${ate}. Assine para continuar usando.` }
+        : { titulo: 'Teste grátis', linha: `Até ${ate} (${diasAte(a.acesso_ate)} dia(s)).` };
+      case 'ativa': return fim ? { titulo: 'Assinatura vencida', linha: `Venceu em ${ate}.` } : { titulo: 'Assinatura ativa', linha: `Acesso garantido até ${ate}. A renovação é automática.` };
+      case 'atrasada': return fim ? { titulo: 'Pagamento atrasado', linha: `O acesso terminou em ${ate}.` } : { titulo: 'Pagamento atrasado', linha: `Regularize até ${ate} para não perder o acesso.` };
+      case 'cancelada': return fim ? { titulo: 'Assinatura cancelada', linha: `O acesso terminou em ${ate}.` } : { titulo: 'Assinatura cancelada', linha: `Você ainda tem acesso até ${ate}.` };
+      case 'reembolsada': return { titulo: 'Pagamento devolvido', linha: 'O pagamento foi reembolsado ou contestado.' };
+      default: return { titulo: 'Sem assinatura', linha: 'Assine para começar a usar o painel.' };
+    }
+  }
+  function botaoPagar(a, texto, classe = 'btn btn-cor') {
+    if (!a || !a.checkout) return el('p', { class: 'msg', style: 'margin:0', text: 'O pagamento ainda está sendo configurado. Fale com a gente pelo WhatsApp.' });
+    return el('a', { class: classe, href: a.checkout, target: '_blank', rel: 'noopener', text: texto });
+  }
+  // Faixa no topo do painel quando falta pouco para o acesso acabar.
+  function faixaPlano() {
+    const a = plano();
+    if (!a || a.isento || !a.tem_acesso || !a.acesso_ate) return null;
+    const d = diasAte(a.acesso_ate);
+    if (a.status === 'teste') return el('div', { class: 'faixa-plano info' }, el('span', { text: `Teste grátis: ${d <= 1 ? 'termina hoje' : `faltam ${d} dias`}.` }), botaoPagar(a, 'Assinar'));
+    if (a.status === 'atrasada') return el('div', { class: 'faixa-plano ruim' }, el('span', { text: `Pagamento atrasado. Regularize até ${dataCurta(a.acesso_ate)}.` }), botaoPagar(a, 'Pagar agora'));
+    if (a.status === 'cancelada' && d <= 7) return el('div', { class: 'faixa-plano' }, el('span', { text: `Assinatura cancelada: acesso até ${dataCurta(a.acesso_ate)}.` }), botaoPagar(a, 'Assinar de novo'));
+    return null;
+  }
+  // Painel bloqueado: só a tela para assinar (os pedidos ficam guardados e os links dos clientes continuam abrindo).
+  function telaAssinar() {
+    $('#btnNovo').hidden = true;
+    const a = plano(), t = textoPlano(a), e = estudio();
+    app.replaceChildren(el('section', { class: 'cartao login' },
+      el('div', { class: 'marca' }, CT.logoEstudio(e, 96)),
+      el('h1', { text: t.titulo }), el('p', { text: t.linha }),
+      el('div', { class: 'plano-caixa' },
+        botaoPagar(a, a && a.status !== 'nenhuma' ? 'Pagar e liberar o painel' : 'Assinar agora'),
+        el('button', { class: 'btn', type: 'button', text: 'Já paguei: verificar', onclick: () => esperarPagamento(true) }),
+        el('p', { style: 'margin:0;color:var(--suave);font-size:14px', text: 'Seus pedidos ficam guardados e os links dos seus clientes continuam funcionando.' })),
+      el('button', { class: 'link-txt', type: 'button', style: 'margin-top:12px', text: 'Sair desta conta', onclick: async () => { await CT.sair(); conta = null; modoLogin = 'entrar'; telaLogin(); } })));
+  }
+  // Volta da Cakto (?pago=...) ou toque em "Já paguei": confere de tempos em tempos até o acesso liberar.
+  async function esperarPagamento(manual) {
+    $('#btnNovo').hidden = true;
+    const msg = el('p', { text: manual ? 'Conferindo o pagamento…' : 'Recebemos você de volta! Assim que a Cakto confirmar o pagamento, o painel libera sozinho.' });
+    app.replaceChildren(el('section', { class: 'cartao login' }, el('div', { class: 'marca' }, svgIcone(76)), el('h1', { text: 'Confirmando o pagamento' }), msg));
+    const limite = Date.now() + (manual ? 20000 : 120000);
+    while (Date.now() < limite) {
+      try { conta = await CT.pedir('/rest/v1/rpc/ct_minha_conta', { metodo: 'POST', corpo: {}, comLogin: true }); } catch (_) {}
+      if (plano() && plano().tem_acesso) { aviso('Pagamento confirmado. Bem-vindo!'); return iniciar(); }
+      await new Promise(r => setTimeout(r, 4000));
+    }
+    msg.textContent = 'Ainda não chegou a confirmação. Pix e cartão costumam confirmar em poucos minutos; boleto pode levar até 2 dias úteis.';
+    msg.after(el('button', { class: 'btn btn-cor', type: 'button', text: 'Verificar de novo', onclick: () => esperarPagamento(true) }));
+  }
+  function abrirAssinatura() {
+    const a = plano(), t = textoPlano(a);
+    $('#aCorpo').replaceChildren(
+      el('div', { class: 'plano-status' }, el('b', { text: t.titulo }), el('span', { text: t.linha })),
+      a && !a.isento && (a.status !== 'ativa' || !a.tem_acesso) ? botaoPagar(a, a.status === 'teste' || a.status === 'nenhuma' ? 'Assinar agora' : 'Pagar agora') : null,
+      a && !a.isento ? el('p', { style: 'margin:0;color:var(--suave);font-size:14px', text: 'A cobrança é feita pela Cakto, que manda os recibos por e-mail. Para cancelar ou trocar o cartão, fale com a gente pelo WhatsApp.' }) : null);
+    abrir($('#dlgAssinatura'));
+  }
+  $('#mAssinatura').addEventListener('click', () => { fechar($('#dlgMenu')); abrirAssinatura(); });
+
   /* ---------- menu ---------- */
   function abrirMenu() {
     $('#mConta').textContent = CT.sessao ? `Conectado como ${CT.sessao.email}` : '';
     const temEstudio = Boolean(conta && conta.estudio && conta.estudio.ativo);
     $('#mConfig').hidden = !temEstudio || tela !== 'pedidos';
     $('#mSugestao').hidden = !temEstudio;
+    $('#mAssinatura').hidden = !(temEstudio && plano() && !plano().isento);
     $('#mPlataforma').hidden = !(conta && conta.dono_plataforma) || tela === 'plataforma';
     $('#mPedidos').hidden = !temEstudio || tela === 'pedidos';
     abrir($('#dlgMenu'));
@@ -1214,10 +1309,56 @@
     try { await carregarPlataforma(); desenharPlataforma(); }
     catch (e) { app.replaceChildren(el('div', { class: 'cartao vazio' }, el('b', { text: 'Não consegui carregar os estúdios' }), erroAmigavel(e))); }
   }
+  let cobranca = null;
   async function carregarPlataforma() {
     const rpc = n => CT.pedir('/rest/v1/rpc/' + n, { metodo: 'POST', comLogin: true, corpo: {} });
-    [estudios, sugestoes] = await Promise.all([rpc('ct_plat_estudios'), rpc('ct_plat_sugestoes')]);
+    [estudios, sugestoes, cobranca] = await Promise.all([rpc('ct_plat_estudios'), rpc('ct_plat_sugestoes'), rpc('ct_plat_cobranca')]);
     estudios = estudios || []; sugestoes = sugestoes || [];
+  }
+  const URL_WEBHOOK = 'https://rdpraovrcfiiryklybiy.supabase.co/functions/v1/cakto-webhook';
+  const urlRetorno = () => new URL('./administrador/?pago={{callback}}', location.href).href;
+  function linhaCopiar(rotulo, valor) {
+    const campo = el('input', { readonly: true, value: valor, 'aria-label': rotulo });
+    return el('div', { class: 'campo' }, el('span', { class: 'rotulo', text: rotulo }),
+      el('div', { class: 'copiar-linha' }, campo, el('button', { class: 'btn', type: 'button', text: 'Copiar', onclick: async () => {
+        try { await navigator.clipboard.writeText(valor); aviso('Copiado.'); } catch (_) { campo.select(); aviso('Selecione e copie.', true); }
+      } })));
+  }
+  // Configuração da cobrança: link do checkout, código secreto do webhook e dias de teste grátis.
+  function blocoCobranca() {
+    const c = cobranca || {};
+    const link = el('input', { id: 'cbLink', type: 'url', inputmode: 'url', placeholder: 'https://pay.cakto.com.br/...', value: c.cakto_checkout || '' });
+    const segredo = el('input', { id: 'cbSegredo', type: 'password', autocomplete: 'off', placeholder: c.tem_segredo ? 'Salvo ✓ (cole outro só para trocar)' : 'Cole aqui o "secret" do webhook da Cakto' });
+    const teste = el('input', { id: 'cbTeste', type: 'number', inputmode: 'numeric', min: '0', max: '90', step: '1', value: String(c.dias_teste == null ? 0 : c.dias_teste) });
+    const tol = el('input', { id: 'cbTol', type: 'number', inputmode: 'numeric', min: '0', max: '30', step: '1', value: String(c.dias_tolerancia == null ? 3 : c.dias_tolerancia) });
+    const erro = el('p', { class: 'erro', id: 'cbErro' });
+    const salvar = el('button', { class: 'btn btn-cor', type: 'button', id: 'cbSalvar', text: 'Salvar cobrança', onclick: async () => {
+      let url = link.value.trim();
+      if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
+      url = url.replace(/^http:/i, 'https:').replace(/[?#].*$/, '');
+      if (url && !/^https:\/\/[a-z0-9.-]+\.[a-z]{2,}(\/[A-Za-z0-9._~\/-]*)?$/i.test(url)) { erro.textContent = 'Link do checkout inválido. Copie o link da oferta na Cakto.'; return; }
+      const dt = Number(teste.value), dl = Number(tol.value);
+      if (!Number.isInteger(dt) || dt < 0 || dt > 90) { erro.textContent = 'Teste grátis: de 0 a 90 dias.'; return; }
+      if (!Number.isInteger(dl) || dl < 0 || dl > 30) { erro.textContent = 'Tolerância: de 0 a 30 dias.'; return; }
+      erro.textContent = ''; salvar.disabled = true;
+      const ok = await acaoPlataforma('ct_plat_salvar_cobranca', { p_dias_teste: dt, p_dias_tolerancia: dl, p_checkout: url, p_segredo: segredo.value.trim() }, 'Cobrança salva.');
+      if (!ok) salvar.disabled = false;
+    } });
+    const eventos = (c.eventos || []);
+    return el('section', { class: 'cartao cobranca', id: 'cobranca' },
+      el('p', { style: 'margin:0;color:var(--suave);font-size:14.5px', text: 'Os estúdios assinam pela Cakto. Quando o pagamento é aprovado, renovado, atrasa ou é reembolsado, a Cakto avisa aqui e o acesso muda sozinho.' }),
+      el('div', { class: 'campo' }, el('label', { for: 'cbLink', text: '1. Link do checkout do plano (na Cakto)' }), link),
+      linhaCopiar('2. Na Cakto, em Produto › Configurações › Checkout › "Redirecionar após o pagamento", cole:', urlRetorno()),
+      linhaCopiar('3. Na Cakto, crie um webhook com esta URL (eventos de compra e de assinatura):', URL_WEBHOOK),
+      el('div', { class: 'campo' }, el('label', { for: 'cbSegredo', text: '4. Código secreto ("secret") do webhook' }), segredo, el('small', { text: 'Fica guardado no servidor e nunca aparece de novo na tela.' })),
+      el('div', { class: 'grade' },
+        el('div', { class: 'campo' }, el('label', { for: 'cbTeste', text: 'Dias de teste grátis' }), teste, el('small', { text: '0 = precisa assinar antes de usar.' })),
+        el('div', { class: 'campo' }, el('label', { for: 'cbTol', text: 'Dias de tolerância' }), tol, el('small', { text: 'Depois do vencimento, antes de bloquear.' }))),
+      erro, salvar,
+      el('h3', { style: 'margin:6px 0 0;font:700 16px var(--serifa)', text: 'Últimos avisos da Cakto' }),
+      eventos.length ? el('ul', { class: 'eventos-cakto' }, eventos.map(ev => el('li', {},
+        el('b', { text: ev.evento }), ` · ${ev.estudio || ev.email || 'sem estúdio'}`, el('br'), el('small', { text: `${ev.resultado || ''} · ${CT.relativo(ev.recebido_em)}` }))))
+        : el('p', { style: 'margin:0;color:var(--suave);font-size:14px', text: 'Nenhum aviso recebido ainda.' }));
   }
   async function acaoPlataforma(rpc, corpo, ok) {
     try { await CT.pedir('/rest/v1/rpc/' + rpc, { metodo: 'POST', comLogin: true, corpo }); await carregarPlataforma(); desenharPlataforma(); if (ok) aviso(ok); return true; }
@@ -1235,6 +1376,7 @@
         el('button', { type: 'button', tabindex: '-1' }, el('b', { text: String(sugestoes.length) }), el('span', { text: 'Sugestões' })),
         el('button', { type: 'button', onclick: abrirNovoEstudio }, el('b', { text: '+' }), el('span', { text: 'Novo estúdio' }))),
       el('div', { class: 'lista' }, estudios.map(cartaoEstudio)),
+      el('h2', { class: 'secao-titulo', text: 'Cobrança (Cakto)' }), blocoCobranca(),
       el('h2', { class: 'secao-titulo', text: 'Sugestões recebidas' }),
       el('div', { class: 'lista' }, sugestoes.length ? sugestoes.map(x => el('article', { class: 'cartao sugestao' },
         el('p', { text: x.texto }), el('small', { text: [x.estudio || 'Sem estúdio', x.email, CT.relativo(x.criado_em)].filter(Boolean).join(' · ') })))
@@ -1258,6 +1400,9 @@
         el('span', {}, el('b', { text: nf.format(e.em_andamento) }), ' em andamento'),
         el('span', { text: e.ultimo_pedido ? `Último pedido ${CT.relativo(e.ultimo_pedido)}` : 'Nenhum pedido ainda' }),
         e.ultima_atualizacao ? el('span', { text: `Última atualização ${CT.relativo(e.ultima_atualizacao)}` }) : null),
+      el('div', { class: 'plano' }, e.isento ? el('b', { text: 'Isento (não paga)' })
+        : [el('b', { text: textoPlano({ status: e.assinatura_status, acesso_ate: e.acesso_ate, tem_acesso: e.tem_acesso }).titulo }),
+          e.acesso_ate ? ` · acesso ${e.tem_acesso ? 'até' : 'terminou em'} ${dataCurta(e.acesso_ate)}` : ' · sem acesso', e.na_cakto ? ' · Cakto' : '']),
       el('div', { class: 'pessoas' }, (e.pessoas || []).map(em => el('span', { class: 'pessoa' }, el('span', { text: em }),
         el('button', { type: 'button', 'aria-label': `Convite para ${em}`, title: 'Convite', text: '✉️', onclick: () => abrirConvite(e.nome, em) }),
         el('button', { type: 'button', 'aria-label': `Tirar ${em}`, title: 'Tirar acesso', onclick: async () => {
@@ -1268,6 +1413,12 @@
         el('button', { class: 'btn', type: 'button', text: e.ativo ? 'Pausar acesso' : 'Reativar acesso', onclick: async () => {
           if (e.ativo && !(await confirmar(`Pausar o ${e.nome}? O painel deles fica bloqueado (nada é apagado) e os links dos clientes continuam abrindo.`, 'Pausar'))) return;
           acaoPlataforma('ct_plat_editar_estudio', { p_id: e.id, p_nome: null, p_ativo: !e.ativo }, e.ativo ? 'Estúdio pausado.' : 'Estúdio reativado.');
+        } }),
+        e.isento ? null : el('button', { class: 'btn', type: 'button', text: '+30 dias', title: 'Recebeu por fora (ex.: Pix direto)? Dá 30 dias de acesso.', onclick: () =>
+          acaoPlataforma('ct_plat_dar_acesso', { p_id: e.id, p_dias: 30 }, `${e.nome}: +30 dias de acesso.`) }),
+        el('button', { class: 'btn', type: 'button', text: e.isento ? 'Tirar isenção' : 'Isentar', onclick: async () => {
+          if (!e.isento && !(await confirmar(`Isentar o ${e.nome}? Ele usa sem pagar até você tirar a isenção.`, 'Isentar'))) return;
+          acaoPlataforma('ct_plat_isentar', { p_id: e.id, p_isento: !e.isento }, e.isento ? 'Isenção removida.' : 'Estúdio isento.');
         } })));
   }
   function abrirNovoEstudio() { $('#nNome').value = ''; $('#nEmail').value = ''; $('#nErro').textContent = ''; abrir($('#dlgNovoEstudio')); $('#nNome').focus(); }
@@ -1320,9 +1471,9 @@
       if (w && w.length < 10) { m.textContent = 'WhatsApp incompleto: coloque DDD e número.'; return whats.focus(); }
       botao.disabled = true; m.textContent = '';
       try {
-        conta.estudio = await CT.pedir('/rest/v1/rpc/ct_criar_meu_estudio', { metodo: 'POST', comLogin: true, corpo: { p_nome: n, p_whatsapp: w } });
-        lembrarMarca(); tela = 'pedidos'; await carregar(); desenhar();
-        aviso('Painel criado! Coloque sua logo, cor e chave Pix.', false, { rotulo: 'Configurar', fn: abrirConfig });
+        await CT.pedir('/rest/v1/rpc/ct_criar_meu_estudio', { metodo: 'POST', comLogin: true, corpo: { p_nome: n, p_whatsapp: w } });
+        await iniciar();
+        if (plano() && plano().tem_acesso) aviso('Painel criado! Coloque sua logo, cor e chave Pix.', false, { rotulo: 'Configurar', fn: abrirConfig });
       } catch (e) { m.textContent = erroAmigavel(e); botao.disabled = false; }
     });
     app.replaceChildren(el('section', { class: 'cartao login' },
@@ -1340,6 +1491,14 @@
       // Quem chega pelo link de confirmação do e-mail ainda não tem o e-mail guardado na sessão.
       if (conta && conta.email && CT.sessao && !CT.sessao.email) CT.sessao.email = conta.email;
       const e = conta && conta.estudio;
+      const voltouDoPagamento = new URLSearchParams(location.search).has('pago');
+      if (voltouDoPagamento) history.replaceState(null, '', location.pathname);
+      if (e && e.ativo && plano() && !plano().tem_acesso) {
+        lembrarMarca();
+        if (voltouDoPagamento) return esperarPagamento(false);
+        if (conta.dono_plataforma) return irPlataforma();
+        return telaAssinar();
+      }
       if (e && e.ativo) { lembrarMarca(); tela = 'pedidos'; await carregar(); return desenhar(); }
       if (conta && conta.dono_plataforma) return irPlataforma();
       if (e) return semEstudio('Acesso pausado', `O painel do ${e.nome} está pausado no momento. Seus pedidos estão guardados e os links dos clientes continuam funcionando. Fale com a gente para reativar.`);
