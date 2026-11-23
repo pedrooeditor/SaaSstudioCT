@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Área de membros</title>
+<title>Área de membros | Montra 3D</title>
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#F6ECDC">
-<link rel="icon" type="image/svg+xml" href="assets/icone.svg">
-<link rel="stylesheet" href="assets/estilo.css?v=8">
+<link rel="icon" type="image/svg+xml" href="assets/montra-icone.svg">
+<link rel="apple-touch-icon" href="assets/montra-apple-touch-icon.png">
+<link rel="stylesheet" href="assets/estilo.css?v=9">
 <style>
   .pagina { max-width: 980px; margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom)); }
   .topo { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
@@ -410,8 +411,8 @@
 
 <div class="aviso" id="aviso" role="status" aria-live="polite"></div>
 
-<script src="config.js?v=8"></script>
-<script src="assets/comum.js?v=8"></script>
+<script src="config.js?v=9"></script>
+<script src="assets/comum.js?v=10"></script>
 <script>
 (() => {
   'use strict';
@@ -538,9 +539,19 @@
     if (/ct_feitos_validos/.test(e.message)) return 'A quantidade pronta não pode passar do total do pedido.';
     return e.message || 'Algo deu errado. Tente de novo.';
   }
-  function svgIcone(t) {
-    const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('width', t); s.setAttribute('height', t); s.setAttribute('aria-hidden', 'true');
-    const u = document.createElementNS('http://www.w3.org/2000/svg', 'use'); u.setAttribute('href', '#i-icone'); s.append(u); return s;
+  const COR_MONTRA = '#6C5AE6';
+  function svgIcone(t) { return el('img', { src: 'assets/montra.svg', alt: 'Montra 3D', width: String(t), height: String(Math.round(t * 612 / 712)) }); }
+  // Link do plano na Cakto (o mesmo dos botões da página inicial).
+  let linkCheckout = '';
+  async function pegarCheckout() {
+    if (linkCheckout) return linkCheckout;
+    try { linkCheckout = (await CT.pedir('/rest/v1/rpc/ct_checkout_publico', { metodo: 'POST', corpo: {} })) || ''; } catch (_) {}
+    return linkCheckout;
+  }
+  function linkAssinar(texto, email) {
+    const a = el('a', { class: 'btn btn-cor', target: '_blank', rel: 'noopener', text: texto, href: 'https://studioct3d.com.br/#plano' });
+    pegarCheckout().then(u => { if (u) a.href = u + (email ? `?email=${encodeURIComponent(email)}&confirmEmail=${encodeURIComponent(email)}` : ''); });
+    return a;
   }
   function svg(id) {
     const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('class', 'ic');
@@ -582,6 +593,14 @@
           return telaLogin('Senha trocada! Entre com a senha nova.', 'ok');
         }
         if (criar) {
+          falar('Conferindo a compra…', '');
+          const pode = await CT.pedir('/rest/v1/rpc/ct_pode_cadastrar', { metodo: 'POST', corpo: { p_email: em } });
+          if (pode !== true) {
+            m.replaceChildren(`Não encontramos uma compra com ${em}. Use o mesmo e-mail que você colocou na Cakto (a confirmação do pagamento pode levar alguns minutos). `,
+              (() => { const a = linkAssinar('Ainda não assinei: assinar agora', em); a.className = 'link-txt'; return a; })());
+            m.className = 'msg ruim';
+            return;
+          }
           const d = await CT.pedir('/auth/v1/signup?redirect_to=' + encodeURIComponent(location.origin + location.pathname), { metodo: 'POST', corpo: { email: em, password: s } });
           if (d && d.access_token) { CT.guardarSessao(d); return iniciar(); }
           modoLogin = 'entrar';
@@ -594,7 +613,7 @@
         const t = String(err.message || '');
         falar(/not confirmed/i.test(t) ? 'Confirme o e-mail primeiro: toque no link que enviamos (veja o spam).'
           : /invalid login|invalid credentials/i.test(t) ? 'E-mail ou senha errados.'
-          : /already registered|already been registered/i.test(t) ? 'Este e-mail já tem conta. Use a aba "Entrar".'
+          : /already registered|already been registered/i.test(t) ? 'Este e-mail já tem conta. Use a aba "Entrar" (ou "Esqueci a senha").'
           : err.status === 429 || /rate limit/i.test(t) ? (criar ? 'Muitos cadastros nesta última hora. Tente de novo daqui a alguns minutos.' : 'Muitas tentativas seguidas. Espere alguns minutos.')
           : erroAmigavel(err));
       } finally { botao.disabled = false; }
@@ -609,12 +628,13 @@
     }
     let marca = null;
     try { marca = JSON.parse(localStorage.getItem(MARCA_KEY) || 'null'); } catch (_) {}
-    CT.aplicarCor(marca && marca.cor);
+    CT.aplicarCor((marca && marca.cor) || COR_MONTRA);
     app.replaceChildren(el('section', { class: 'cartao login' },
       el('div', { class: 'marca' }, marca ? CT.logoEstudio(marca, 110) : svgIcone(76)),
       el('h1', { text: nova ? 'Nova senha' : marca && !criar ? marca.nome : 'Área de membros' }),
-      el('p', { text: nova ? 'Crie uma senha nova para a conta.' : criar ? 'Crie a sua conta para montar o painel do seu estúdio. Você recebe um e-mail para confirmar.' : 'Entre com a conta do seu estúdio.' }),
+      el('p', { text: nova ? 'Crie uma senha nova para a conta.' : criar ? 'Já assinou? Use o mesmo e-mail que você colocou na compra e crie uma senha.' : 'Entre com a conta do seu estúdio.' }),
       abas, form,
+      nova ? null : el('p', { class: 'ainda-nao', style: 'margin:16px 0 0;font-size:14.5px;color:var(--suave)' }, 'Ainda não assinou? ', (() => { const a = linkAssinar('Assine o Montra 3D'); a.className = 'link-txt'; return a; })()),
       nova ? null : el('a', { class: 'voltar', href: './', text: '← Voltar para a página inicial' })));
     (nova ? senha : email).focus();
   }
@@ -1304,15 +1324,16 @@
   /* ---------- painel do dono da plataforma ---------- */
   let estudios = [], sugestoes = [];
   async function irPlataforma() {
-    tela = 'plataforma'; $('#btnNovo').hidden = true; CT.aplicarCor(null);
+    tela = 'plataforma'; $('#btnNovo').hidden = true; CT.aplicarCor(COR_MONTRA);
     app.replaceChildren(el('p', { style: 'text-align:center;padding:60px 0;color:var(--suave)', text: 'Carregando estúdios…' }));
     try { await carregarPlataforma(); desenharPlataforma(); }
     catch (e) { app.replaceChildren(el('div', { class: 'cartao vazio' }, el('b', { text: 'Não consegui carregar os estúdios' }), erroAmigavel(e))); }
   }
-  let cobranca = null;
+  let cobranca = null, liberados = [];
   async function carregarPlataforma() {
     const rpc = n => CT.pedir('/rest/v1/rpc/' + n, { metodo: 'POST', comLogin: true, corpo: {} });
-    [estudios, sugestoes, cobranca] = await Promise.all([rpc('ct_plat_estudios'), rpc('ct_plat_sugestoes'), rpc('ct_plat_cobranca')]);
+    [estudios, sugestoes, cobranca, liberados] = await Promise.all([rpc('ct_plat_estudios'), rpc('ct_plat_sugestoes'), rpc('ct_plat_cobranca'), rpc('ct_plat_liberados')]);
+    liberados = liberados || [];
     estudios = estudios || []; sugestoes = sugestoes || [];
   }
   const URL_WEBHOOK = 'https://rdpraovrcfiiryklybiy.supabase.co/functions/v1/cakto-webhook';
@@ -1325,6 +1346,38 @@
       } })));
   }
   // Configuração da cobrança: link do checkout, código secreto do webhook e dias de teste grátis.
+  // Quem pode criar conta sem pagar: teste por alguns dias ou grátis. Quem compra na Cakto entra aqui sozinho.
+  function blocoLiberar() {
+    const email = el('input', { id: 'lbEmail', type: 'email', placeholder: 'e-mail da pessoa', autocomplete: 'off' });
+    const tipo = el('select', { id: 'lbTipo' }, el('option', { value: 'teste', text: 'Teste por alguns dias' }), el('option', { value: 'gratis', text: 'Grátis (não paga)' }));
+    const dias = el('input', { id: 'lbDias', type: 'number', inputmode: 'numeric', min: '1', max: '400', step: '1', value: '30' });
+    const nota = el('input', { id: 'lbNota', maxlength: '120', placeholder: 'Ex.: amigo que vai testar' });
+    const caixaDias = el('div', { class: 'campo' }, el('label', { for: 'lbDias', text: 'Dias de teste' }), dias);
+    tipo.addEventListener('change', () => { caixaDias.hidden = tipo.value !== 'teste'; });
+    const erro = el('p', { class: 'erro', id: 'lbErro' });
+    const botao = el('button', { class: 'btn btn-cor', type: 'button', id: 'lbLiberar', text: 'Liberar', onclick: async () => {
+      const em = email.value.trim().toLowerCase(), d = Number(dias.value);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { erro.textContent = 'Digite um e-mail válido.'; return; }
+      if (tipo.value === 'teste' && (!Number.isInteger(d) || d < 1 || d > 400)) { erro.textContent = 'Dias de teste: de 1 a 400.'; return; }
+      erro.textContent = ''; botao.disabled = true;
+      const ok = await acaoPlataforma('ct_plat_liberar', { p_email: em, p_tipo: tipo.value, p_dias: tipo.value === 'teste' ? d : null, p_nota: nota.value.trim() }, `${em} liberado. Agora a pessoa cria a conta na área de membros com este e-mail.`);
+      if (!ok) botao.disabled = false;
+    } });
+    const rotulo = l => l.tipo === 'compra' ? 'comprou na Cakto' : l.tipo === 'gratis' ? 'grátis' : `teste de ${l.dias} dias`;
+    return el('section', { class: 'cartao cobranca', id: 'liberar' },
+      el('p', { style: 'margin:0;color:var(--suave);font-size:14.5px', text: 'Só cria conta quem comprou na Cakto (com o mesmo e-mail) ou quem você liberar aqui. Para alguém entrar no seu próprio estúdio, use "Adicionar" no cartão do estúdio.' }),
+      el('div', { class: 'campo' }, el('label', { for: 'lbEmail', text: 'E-mail' }), email),
+      el('div', { class: 'grade' }, el('div', { class: 'campo' }, el('label', { for: 'lbTipo', text: 'Tipo' }), tipo), caixaDias),
+      el('div', { class: 'campo' }, el('label', { for: 'lbNota', text: 'Anotação (só você vê)' }), nota),
+      erro, botao,
+      liberados.length ? el('ul', { class: 'eventos-cakto', id: 'lbLista' }, liberados.map(l => el('li', {},
+        el('b', { text: l.email }), ` · ${rotulo(l)}`, l.nota ? ` · ${l.nota}` : '', el('br'),
+        el('small', { text: l.usado_em ? `criou a conta ${CT.relativo(l.usado_em)}${l.estudio ? ' · ' + l.estudio : ''}` : `aguardando cadastro · liberado ${CT.relativo(l.criado_em)}` }),
+        l.usado_em ? null : el('button', { class: 'link-txt', type: 'button', style: 'margin-left:8px;font-size:13px', text: 'tirar', onclick: async () => {
+          if (await confirmar(`Tirar a liberação de ${l.email}?`, 'Tirar')) acaoPlataforma('ct_plat_desliberar', { p_email: l.email }, 'Liberação removida.');
+        } }))))
+        : el('p', { style: 'margin:0;color:var(--suave);font-size:14px', text: 'Nenhum e-mail liberado ainda.' }));
+  }
   function blocoCobranca() {
     const c = cobranca || {};
     const link = el('input', { id: 'cbLink', type: 'url', inputmode: 'url', placeholder: 'https://pay.cakto.com.br/...', value: c.cakto_checkout || '' });
@@ -1378,13 +1431,14 @@
     const ativos = estudios.filter(e => e.ativo);
     const mes = estudios.reduce((t, e) => t + Number(e.pedidos_30d || 0), 0);
     app.replaceChildren(
-      cabecalho(svgIcone(48), 'Estúdios', 'Painel do dono'),
+      cabecalho(svgIcone(48), 'Estúdios', 'Painel do dono · Montra 3D'),
       el('div', { class: 'resumo' },
         el('button', { type: 'button', tabindex: '-1' }, el('b', { text: String(ativos.length) }), el('span', { text: 'Estúdios ativos' })),
         el('button', { type: 'button', tabindex: '-1' }, el('b', { text: nf.format(mes) }), el('span', { text: 'Pedidos em 30 dias' })),
         el('button', { type: 'button', tabindex: '-1' }, el('b', { text: String(sugestoes.length) }), el('span', { text: 'Sugestões' })),
         el('button', { type: 'button', onclick: abrirNovoEstudio }, el('b', { text: '+' }), el('span', { text: 'Novo estúdio' }))),
       el('div', { class: 'lista' }, estudios.map(cartaoEstudio)),
+      el('h2', { class: 'secao-titulo', text: 'Liberar acesso' }), blocoLiberar(),
       el('h2', { class: 'secao-titulo', text: 'Cobrança (Cakto)' }), blocoCobranca(),
       el('h2', { class: 'secao-titulo', text: 'Sugestões recebidas' }),
       el('div', { class: 'lista' }, sugestoes.length ? sugestoes.map(x => el('article', { class: 'cartao sugestao' },
@@ -1463,8 +1517,25 @@
       el('button', { class: 'btn', type: 'button', text: 'Sair desta conta', onclick: async () => { await CT.sair(); conta = null; telaLogin(); } })));
   }
   // Conta nova, ainda sem estúdio: a própria pessoa cria o painel dela.
-  function boasVindas() {
-    $('#btnNovo').hidden = true; CT.aplicarCor(null);
+  function semCompra() {
+    $('#btnNovo').hidden = true; CT.aplicarCor(COR_MONTRA);
+    const email = (conta && conta.email) || (CT.sessao && CT.sessao.email) || '';
+    app.replaceChildren(el('section', { class: 'cartao login' },
+      el('div', { class: 'marca' }, svgIcone(76)), el('h1', { text: 'Falta a assinatura' }),
+      el('p', { text: `Não encontramos uma compra com ${email}. O painel é liberado para o e-mail usado na compra.` }),
+      el('div', { class: 'plano-caixa' },
+        linkAssinar('Assinar o Montra 3D', email),
+        el('button', { class: 'btn', type: 'button', text: 'Já paguei: verificar', onclick: () => iniciar() }),
+        el('p', { style: 'margin:0;color:var(--suave);font-size:14px', text: 'Comprou com outro e-mail? Saia e crie a conta com o e-mail da compra.' })),
+      el('button', { class: 'link-txt', type: 'button', style: 'margin-top:12px', text: 'Sair desta conta', onclick: async () => { await CT.sair(); conta = null; modoLogin = 'entrar'; telaLogin(); } })));
+  }
+  async function boasVindas() {
+    $('#btnNovo').hidden = true; CT.aplicarCor(COR_MONTRA);
+    if (!(conta && conta.dono_plataforma)) {
+      let pode = false;
+      try { pode = (await CT.pedir('/rest/v1/rpc/ct_pode_cadastrar', { metodo: 'POST', corpo: { p_email: conta.email } })) === true; } catch (_) {}
+      if (!pode) return semCompra();
+    }
     const nome = el('input', { id: 'obNome', maxlength: '80', placeholder: 'Ex.: Impressões da Ana', autocomplete: 'organization' });
     const whats = el('input', { id: 'obWhats', type: 'tel', inputmode: 'tel', placeholder: '(11) 98888-7777' });
     const m = el('p', { class: 'msg ruim', id: 'obMsg' });
@@ -1483,7 +1554,7 @@
         await CT.pedir('/rest/v1/rpc/ct_criar_meu_estudio', { metodo: 'POST', comLogin: true, corpo: { p_nome: n, p_whatsapp: w } });
         await iniciar();
         if (plano() && plano().tem_acesso) aviso('Painel criado! Coloque sua logo, cor e chave Pix.', false, { rotulo: 'Configurar', fn: abrirConfig });
-      } catch (e) { m.textContent = erroAmigavel(e); botao.disabled = false; }
+      } catch (e) { if (/Sem compra/.test(e.message || '')) return semCompra(); m.textContent = erroAmigavel(e); botao.disabled = false; }
     });
     app.replaceChildren(el('section', { class: 'cartao login' },
       el('div', { class: 'marca' }, svgIcone(76)), el('h1', { text: 'Bem-vindo!' }),

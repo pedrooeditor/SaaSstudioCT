@@ -158,7 +158,7 @@
   function aplicarCor(cor, alvo) {
     const pagina = !alvo;
     const raiz = (alvo || document.documentElement).style;
-    const props = ['--cor', '--ouro', '--ouro-claro', '--fundo', '--cartao', '--linha', '--trilho', '--rodape-dlg', '--texto-btn', '--borda-btn'];
+    const props = ['--cor', '--ouro', '--ouro-claro', '--fundo', '--cartao', '--linha', '--trilho', '--rodape-dlg', '--texto-btn', '--borda-btn', '--texto', '--suave'];
     props.forEach(p => raiz.removeProperty(p));
     if (!/^#[0-9A-F]{6}$/i.test(cor || '') || cor.toUpperCase() === COR_PADRAO) return;
     cor = cor.toUpperCase();
@@ -173,6 +173,9 @@
     raiz.setProperty('--trilho', misturar(cor, '#FFFFFF', .82));
     raiz.setProperty('--rodape-dlg', misturar(cor, '#FFFFFF', .94));
     raiz.setProperty('--borda-btn', escura);
+    // Texto escuro e texto de apoio puxados para a cor da marca (no dourado padrão ficam o marrom e o bege originais).
+    raiz.setProperty('--texto', misturar(cor, '#000000', .8));
+    raiz.setProperty('--suave', misturar('#5E5A66', cor, .18));
     raiz.setProperty('--texto-btn', luz(media) > .35 ? '#1F1A17' : '#FFFFFF');
     const meta = pagina && document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', misturar(cor, '#FFFFFF', .9));

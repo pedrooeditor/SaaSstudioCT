@@ -22,6 +22,12 @@ Para incluir outro dono, no Supabase, em **SQL Editor**:
 insert into public.ct_admins (email) values ('email@exemplo.com') on conflict do nothing;
 ```
 
+## Cadastro fechado
+- Só cria o painel quem comprou na Cakto (com o mesmo e-mail) ou quem o dono liberou em **Estúdios › Liberar acesso**
+  (teste por alguns dias ou grátis). Quem compra entra sozinho nessa lista, pelo webhook.
+- A página inicial (marca Montra 3D) leva os botões "Assinar" direto ao checkout; a **Área de membros** é só para entrar
+  ou criar a conta com o e-mail da compra.
+
 ## Assinatura dos estúdios (Cakto)
 - Cada estúdio tem "acesso até". Sem acesso, o painel mostra só a tela para assinar; os links dos clientes continuam abrindo.
 - A Cakto avisa a função `supabase/functions/cakto-webhook` (publicada sem exigir login), que confere a assinatura HMAC

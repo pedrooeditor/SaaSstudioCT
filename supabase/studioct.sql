@@ -836,6 +836,143 @@ end;
 $$;
 
 -- =====================================================================
+-- Versão 8: cadastro fechado. Só cria o painel quem comprou na Cakto (com o mesmo e-mail)
+-- ou quem o dono da plataforma liberou (teste por alguns dias ou grátis).
+-- =====================================================================
+create table if not exists public.ct_liberados (
+  email text primary key check (email = lower(email) and email ~ '^[^\s@]+@[^\s@]+\.[^\s@]+$'),
+  tipo text not null default 'teste' check (tipo in ('teste', 'gratis', 'compra')),
+  dias integer check (dias is null or dias between 1 and 400),
+  nota text not null default '' check (char_length(nota) <= 120),
+  criado_em timestamptz not null default now(),
+  usado_em timestamptz
+);
+alter table public.ct_liberados enable row level security;
+revoke all on public.ct_liberados from anon, authenticated;
+
+-- Estúdios novos nascem com a cor da Montra 3D (o dono troca em Configurações).
+alter table public.ct_estudios alter column cor set default '#6C5AE6';
+
+-- Este e-mail pode criar conta? (comprou, foi liberado, já está num estúdio ou é dono da plataforma)
+create or replace function public.ct_email_liberado(p_email text)
+returns boolean language sql stable security definer set search_path = public, extensions as $$
+  select exists (select 1 from ct_liberados where email = lower(btrim(p_email)))
+    or exists (select 1 from ct_membros where email = lower(btrim(p_email)))
+    or exists (select 1 from ct_admins where email = lower(btrim(p_email)))
+    or exists (select 1 from ct_cakto_eventos where email = lower(btrim(p_email)) and estudio_id is null
+               and evento in ('purchase_approved', 'subscription_created', 'subscription_renewed'));
+$$;
+
+-- Usado pela tela "Criar conta" antes de mandar o e-mail de confirmação (aberta a visitantes).
+create or replace function public.ct_pode_cadastrar(p_email text)
+returns boolean language sql stable security definer set search_path = public, extensions as $$
+  select char_length(btrim(coalesce(p_email, ''))) between 6 and 254 and ct_email_liberado(p_email);
+$$;
+
+-- Link do checkout para os botões da página inicial (aberto a visitantes; não é segredo).
+create or replace function public.ct_checkout_publico()
+returns text language sql stable security definer set search_path = public, extensions as $$
+  select cakto_checkout from ct_plataforma where id = 1;
+$$;
+
+-- Compra aprovada de quem ainda não tem conta: o e-mail fica liberado para o cadastro.
+create or replace function public.ct_srv_cakto_receber(p_evento text, p_dados jsonb)
+returns json language plpgsql security definer set search_path = public, extensions as $$
+declare
+  v_email text := lower(btrim(coalesce(p_dados #>> '{customer,email}', '')));
+  v_cb text := coalesce(p_dados ->> 'callback', '');
+  v_sub text := coalesce(p_dados #>> '{subscription,id}', '');
+  v_pedido text := coalesce(p_dados ->> 'id', '');
+  v_estudio uuid; v_id bigint; v_res text;
+begin
+  if p_evento is null or p_evento = '' then return json_build_object('ok', false, 'motivo', 'sem evento'); end if;
+  if v_pedido <> '' and exists (select 1 from ct_cakto_eventos where evento = p_evento and pedido_id = v_pedido) then
+    return json_build_object('ok', true, 'repetido', true);
+  end if;
+  if v_cb <> '' then select id into v_estudio from ct_estudios where assinatura_token = v_cb; end if;
+  if v_estudio is null and v_sub <> '' then select id into v_estudio from ct_estudios where cakto_assinatura = v_sub limit 1; end if;
+  if v_estudio is null and v_email <> '' then select estudio_id into v_estudio from ct_membros where email = v_email; end if;
+
+  insert into ct_cakto_eventos (evento, pedido_id, email, assinatura_id, callback, estudio_id, dados)
+  values (p_evento, v_pedido, v_email, v_sub, v_cb, v_estudio, p_dados - 'secret')
+  on conflict do nothing returning id into v_id;
+  if v_id is null then return json_build_object('ok', true, 'repetido', true); end if;
+
+  if v_estudio is null then
+    if p_evento in ('purchase_approved', 'subscription_created', 'subscription_renewed') and v_email ~ '^[^\s@]+@[^\s@]+\.[^\s@]+$' then
+      insert into ct_liberados (email, tipo, nota) values (v_email, 'compra', 'compra na Cakto') on conflict (email) do nothing;
+    end if;
+    update ct_cakto_eventos set resultado = 'pendente: o e-mail pode criar a conta' where id = v_id;
+    return json_build_object('ok', true, 'pendente', true);
+  end if;
+  v_res := ct_srv_cakto_aplicar(v_estudio, p_evento, p_dados);
+  update ct_cakto_eventos set resultado = v_res where id = v_id;
+  return json_build_object('ok', true, 'resultado', v_res);
+end;
+$$;
+
+-- Conta nova cria o próprio estúdio: só se o e-mail comprou ou foi liberado.
+create or replace function public.ct_criar_meu_estudio(p_nome text, p_whatsapp text default '')
+returns json language plpgsql security definer set search_path = public, extensions as $$
+declare novo ct_estudios; em text := ct_email(); teste int; lib ct_liberados;
+begin
+  if em = '' then raise exception 'Sem permissão' using errcode = '42501'; end if;
+  if exists (select 1 from ct_membros where email = em) then
+    raise exception 'Esta conta já está em um estúdio' using errcode = '23505';
+  end if;
+  if not ct_eh_admin() and not ct_email_liberado(em) then
+    raise exception 'Sem compra: não encontramos uma compra com este e-mail' using errcode = 'P0001';
+  end if;
+  select * into lib from ct_liberados where email = em;
+  select dias_teste into teste from ct_plataforma where id = 1;
+  insert into ct_estudios (nome, whatsapp, isento, acesso_ate, assinatura_status)
+  values (btrim(p_nome), coalesce(p_whatsapp, ''), ct_eh_admin() or coalesce(lib.tipo = 'gratis', false),
+    case when lib.tipo = 'teste' then now() + make_interval(days => coalesce(lib.dias, 30))
+         when coalesce(teste, 0) > 0 then now() + make_interval(days => teste) end,
+    case when lib.tipo = 'teste' or coalesce(teste, 0) > 0 then 'teste' else 'nenhuma' end)
+  returning * into novo;
+  insert into ct_membros (email, estudio_id) values (em, novo.id);
+  update ct_liberados set usado_em = now() where email = em;
+  perform ct_srv_cakto_pendentes(novo.id, em);
+  select * into novo from ct_estudios where id = novo.id;
+  return ct_estudio_json(novo);
+end;
+$$;
+
+-- Dono: liberar um e-mail (teste por alguns dias ou grátis), listar e tirar a liberação.
+create or replace function public.ct_plat_liberar(p_email text, p_tipo text, p_dias integer, p_nota text)
+returns void language plpgsql security definer set search_path = public, extensions as $$
+declare em text := lower(btrim(coalesce(p_email, '')));
+begin
+  perform ct_plat_checar();
+  if em !~ '^[^\s@]+@[^\s@]+\.[^\s@]+$' then raise exception 'E-mail inválido' using errcode = '22023'; end if;
+  if p_tipo not in ('teste', 'gratis') then raise exception 'Tipo inválido' using errcode = '22023'; end if;
+  if exists (select 1 from ct_membros where email = em) then
+    raise exception 'Este e-mail já está em um estúdio' using errcode = '23505';
+  end if;
+  insert into ct_liberados (email, tipo, dias, nota) values (em, p_tipo, case when p_tipo = 'teste' then coalesce(p_dias, 30) end, coalesce(btrim(p_nota), ''))
+  on conflict (email) do update set tipo = excluded.tipo, dias = excluded.dias, nota = excluded.nota, criado_em = now(), usado_em = null;
+end;
+$$;
+create or replace function public.ct_plat_liberados()
+returns json language plpgsql stable security definer set search_path = public, extensions as $$
+begin
+  perform ct_plat_checar();
+  return coalesce((select json_agg(x order by x.criado_em desc) from (
+    select l.email, l.tipo, l.dias, l.nota, l.criado_em, l.usado_em,
+      (select e.nome from ct_membros m join ct_estudios e on e.id = m.estudio_id where m.email = l.email) as estudio
+    from ct_liberados l order by l.criado_em desc limit 200) x), '[]');
+end;
+$$;
+create or replace function public.ct_plat_desliberar(p_email text)
+returns void language plpgsql security definer set search_path = public, extensions as $$
+begin
+  perform ct_plat_checar();
+  delete from ct_liberados where email = lower(btrim(p_email));
+end;
+$$;
+
+-- =====================================================================
 -- ADMINISTRADORES: troque pelo seu e-mail (em minúsculas).
 -- =====================================================================
 insert into public.ct_admins (email) values ('psimoes2704@gmail.com') on conflict do nothing;
@@ -855,7 +992,7 @@ do $$
 declare f record;
 begin
   for f in select p.oid::regprocedure as assinatura from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-           where n.nspname = 'public' and p.proname like 'ct\_%' and p.proname <> 'ct_pedido_publico' loop
+           where n.nspname = 'public' and p.proname like 'ct\_%' and p.proname not in ('ct_pedido_publico', 'ct_pode_cadastrar', 'ct_checkout_publico') loop
     execute format('revoke execute on function %s from public, anon', f.assinatura);
     if f.assinatura::text like 'ct\_srv\_%' then
       execute format('revoke execute on function %s from authenticated', f.assinatura);
@@ -865,3 +1002,7 @@ begin
     end if;
   end loop;
 end $$;
+
+-- Abertas a visitantes: a tela "Criar conta" confere o e-mail e a página inicial pega o link do checkout.
+grant execute on function public.ct_pode_cadastrar(text) to anon, authenticated;
+grant execute on function public.ct_checkout_publico() to anon, authenticated;
