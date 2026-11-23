@@ -1350,7 +1350,16 @@
       el('div', { class: 'campo' }, el('label', { for: 'cbLink', text: '1. Link do checkout do plano (na Cakto)' }), link),
       linhaCopiar('2. Na Cakto, em Produto › Configurações › Checkout › "Redirecionar após o pagamento", cole:', urlRetorno()),
       linhaCopiar('3. Na Cakto, crie um webhook com esta URL (eventos de compra e de assinatura):', URL_WEBHOOK),
-      el('div', { class: 'campo' }, el('label', { for: 'cbSegredo', text: '4. Código secreto ("secret") do webhook' }), segredo, el('small', { text: 'Fica guardado no servidor e nunca aparece de novo na tela.' })),
+      el('div', { class: 'campo' }, el('label', { for: 'cbSegredo', text: '4. Chave secreta do webhook (a mesma que você colocar na Cakto)' }),
+        el('div', { class: 'copiar-linha' }, segredo, el('button', { class: 'btn', type: 'button', id: 'cbGerar', text: 'Gerar código', onclick: async () => {
+          // Código aleatório forte; aparece só agora, para copiar e colar na Cakto em "Chave Secreta".
+          const b = new Uint8Array(24); crypto.getRandomValues(b);
+          const cod = 'ct3d_' + [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+          segredo.type = 'text'; segredo.value = cod;
+          try { await navigator.clipboard.writeText(cod); aviso('Código gerado e copiado. Cole na Cakto e depois clique em "Salvar cobrança".'); }
+          catch (_) { segredo.select(); aviso('Código gerado. Copie, cole na Cakto e depois clique em "Salvar cobrança".'); }
+        } })),
+        el('small', { text: 'Depois de salvar, fica guardado no servidor e não aparece mais na tela.' })),
       el('div', { class: 'grade' },
         el('div', { class: 'campo' }, el('label', { for: 'cbTeste', text: 'Dias de teste grátis' }), teste, el('small', { text: '0 = precisa assinar antes de usar.' })),
         el('div', { class: 'campo' }, el('label', { for: 'cbTol', text: 'Dias de tolerância' }), tol, el('small', { text: 'Depois do vencimento, antes de bloquear.' }))),
