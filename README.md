@@ -53,4 +53,4 @@ em **Authentication > Emails > SMTP Settings**.
 2. No Registro.br, em **DNS**, crie 4 registros `A` apontando para o GitHub e um `CNAME` de `www` para `pedrooeditor.github.io`.
 3. Volte em **Settings > Pages** e marque **Enforce HTTPS** quando liberar.
 4. No Supabase, em **Authentication > URL Configuration**, adicione `https://nexostud.com.br/**` em **Redirect URLs** (para os links de confirmação e "esqueci a senha").
-5. O endereço antigo (studioct3d.com.br) fica num repositório à parte, que só redireciona para o mesmo caminho em nexostud.com.br.
+5. O endereço antigo (studioct3d.com.br) fica no repositório `nexo`, que só redireciona para o mesmo caminho em nexostud.com.br.
