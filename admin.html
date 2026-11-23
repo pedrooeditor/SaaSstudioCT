@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Área de membros | Montra 3D</title>
+<title>Área de membros | Nexo</title>
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#F6ECDC">
-<link rel="icon" type="image/svg+xml" href="assets/montra-icone.svg">
-<link rel="apple-touch-icon" href="assets/montra-apple-touch-icon.png">
+<meta name="theme-color" content="#F7F5FF">
+<link rel="icon" type="image/svg+xml" href="assets/nexo.svg">
+<link rel="apple-touch-icon" href="assets/nexo-apple-touch-icon.png">
 <link rel="stylesheet" href="assets/estilo.css?v=9">
+<link rel="stylesheet" href="assets/nexo.css?v=1">
 <style>
   .pagina { max-width: 980px; margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom)); }
   .topo { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
@@ -62,8 +63,14 @@
   .link-box textarea { min-height: 128px; }
   .link-box .dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .link-box small { color: var(--suave); font-size: 12.5px; margin-top: -4px; }
+  .endereco { display: flex; align-items: stretch; min-height: 44px; border: 1px solid var(--linha); border-radius: 12px; background: #fff; overflow: hidden; }
+  .endereco:focus-within { outline: 2px solid var(--cor); outline-offset: 1px; }
+  .endereco span { display: flex; align-items: center; padding: 0 2px 0 12px; color: var(--suave); font-size: 15px; white-space: nowrap; }
+  .endereco input { flex: 1; min-width: 0; border: 0; border-radius: 0; padding-left: 0; outline: none; }
+  .exemplo-link { font: 500 12.5px var(--nexo-mono); color: var(--texto); word-break: break-all; }
   .login { max-width: 420px; margin: 4vh auto 0; text-align: center; }
   .login .marca { display: grid; justify-items: center; margin: 0 auto 8px; }
+  .login .marca .nexo-logo { font-size: 40px; margin: 6px 0 4px; }
   .login h1 { margin: 0 0 4px; font: 700 24px var(--serifa); }
   .login p { margin: 0 0 16px; color: var(--suave); }
   .login form { display: grid; gap: 12px; text-align: left; }
@@ -352,6 +359,9 @@
   <div class="dlg-topo"><h2 id="tConfig">Configurações do estúdio</h2><button class="icone-btn" type="button" data-fechar aria-label="Fechar"><svg class="ic"><use href="#i-x"/></svg></button></div>
   <div class="dlg-corpo">
     <div class="campo"><label for="cNome">Nome do estúdio *</label><input id="cNome" maxlength="80"><small>Aparece para os seus clientes.</small></div>
+    <div class="campo"><label for="cApelido">Endereço dos seus links</label>
+      <div class="endereco"><span id="cDominio">nexostud.com.br/</span><input id="cApelido" maxlength="30" autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="seuestudio"></div>
+      <small>Seu cliente recebe: <span class="exemplo-link" id="cApelidoEx"></span><br>Letras, números ou hífen. Se trocar, os links que você já mandou continuam abrindo.</small></div>
     <div class="campo"><span class="rotulo">Logo</span>
       <div class="logo-box"><div class="previa" id="cLogoPrevia"></div>
         <div style="display:grid;gap:8px"><label class="btn" for="cLogo" style="cursor:pointer">Escolher imagem</label><input id="cLogo" type="file" accept="image/*" class="sr"><button class="btn" type="button" id="cLogoTirar">Tirar logo</button></div>
@@ -454,7 +464,10 @@
   const digitos = v => String(v || '').replace(/\D/g, '');
   const ls = { get: k => { try { return localStorage.getItem(k) || ''; } catch (_) { return ''; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (_) {} } };
   const terminoDe = p => new Date(CT.data(p.inicio).getTime() + Number(p.prazo_horas) * 3600000);
-  const linkCliente = p => new URL('./p/' + encodeURIComponent(p.codigo), location.href).href;
+  const linkCliente = p => {
+    const a = estudio().apelido;
+    return new URL(a && p.chave ? `./${a}/${p.numero}-${p.chave}` : './p/' + encodeURIComponent(p.codigo), location.href).href;
+  };
   // ---------- Cores ----------
   const temCores = p => Array.isArray(p.cores) && p.cores.length > 0;
   const copiaCores = p => (p.cores || []).map(c => ({ nome: c.nome, qtd: c.qtd, feitos: c.feitos }));
@@ -539,8 +552,10 @@
     if (/ct_feitos_validos/.test(e.message)) return 'A quantidade pronta não pode passar do total do pedido.';
     return e.message || 'Algo deu errado. Tente de novo.';
   }
-  const COR_MONTRA = '#6C5AE6';
-  function svgIcone(t) { return el('img', { src: 'assets/montra.svg', alt: 'Montra 3D', width: String(t), height: String(Math.round(t * 612 / 712)) }); }
+  const COR_NEXO = '#6650D9';
+  function svgIcone(t) { return el('img', { src: 'assets/nexo.svg', alt: 'Nexo', width: String(t), height: String(t) }); }
+  // Logotipo da Nexo (símbolo + nome) nas telas de entrar e de assinatura.
+  function logoNexo() { return el('span', { class: 'nexo-logo' }, el('img', { src: 'assets/nexo.svg', alt: '', width: '52', height: '52' }), 'nexo'); }
   // Link do plano na Cakto (o mesmo dos botões da página inicial).
   let linkCheckout = '';
   async function pegarCheckout() {
@@ -549,7 +564,7 @@
     return linkCheckout;
   }
   function linkAssinar(texto, email) {
-    const a = el('a', { class: 'btn btn-cor', target: '_blank', rel: 'noopener', text: texto, href: 'https://studioct3d.com.br/#plano' });
+    const a = el('a', { class: 'btn btn-cor', target: '_blank', rel: 'noopener', text: texto, href: new URL('./#plano', location.href).href });
     pegarCheckout().then(u => { if (u) a.href = u + (email ? `?email=${encodeURIComponent(email)}&confirmEmail=${encodeURIComponent(email)}` : ''); });
     return a;
   }
@@ -628,13 +643,13 @@
     }
     let marca = null;
     try { marca = JSON.parse(localStorage.getItem(MARCA_KEY) || 'null'); } catch (_) {}
-    CT.aplicarCor((marca && marca.cor) || COR_MONTRA);
+    CT.aplicarCor((marca && marca.cor) || COR_NEXO);
     app.replaceChildren(el('section', { class: 'cartao login' },
-      el('div', { class: 'marca' }, marca ? CT.logoEstudio(marca, 110) : svgIcone(76)),
+      el('div', { class: 'marca' }, marca ? CT.logoEstudio(marca, 110) : logoNexo()),
       el('h1', { text: nova ? 'Nova senha' : marca && !criar ? marca.nome : 'Área de membros' }),
       el('p', { text: nova ? 'Crie uma senha nova para a conta.' : criar ? 'Já assinou? Use o mesmo e-mail que você colocou na compra e crie uma senha.' : 'Entre com a conta do seu estúdio.' }),
       abas, form,
-      nova ? null : el('p', { class: 'ainda-nao', style: 'margin:16px 0 0;font-size:14.5px;color:var(--suave)' }, 'Ainda não assinou? ', (() => { const a = linkAssinar('Assine o Montra 3D'); a.className = 'link-txt'; return a; })()),
+      nova ? null : el('p', { class: 'ainda-nao', style: 'margin:16px 0 0;font-size:14.5px;color:var(--suave)' }, 'Ainda não assinou? ', (() => { const a = linkAssinar('Assine a Nexo'); a.className = 'link-txt'; return a; })()),
       nova ? null : el('a', { class: 'voltar', href: './', text: '← Voltar para a página inicial' })));
     (nova ? senha : email).focus();
   }
@@ -1201,7 +1216,7 @@
   async function esperarPagamento(manual) {
     $('#btnNovo').hidden = true;
     const msg = el('p', { text: manual ? 'Conferindo o pagamento…' : 'Recebemos você de volta! Assim que a Cakto confirmar o pagamento, o painel libera sozinho.' });
-    app.replaceChildren(el('section', { class: 'cartao login' }, el('div', { class: 'marca' }, svgIcone(76)), el('h1', { text: 'Confirmando o pagamento' }), msg));
+    app.replaceChildren(el('section', { class: 'cartao login' }, el('div', { class: 'marca' }, logoNexo()), el('h1', { text: 'Confirmando o pagamento' }), msg));
     const limite = Date.now() + (manual ? 20000 : 120000);
     while (Date.now() < limite) {
       try { conta = await CT.pedir('/rest/v1/rpc/ct_minha_conta', { metodo: 'POST', corpo: {}, comLogin: true }); } catch (_) {}
@@ -1239,7 +1254,7 @@
   $('#btnSair').addEventListener('click', async () => { await CT.sair(); fechar($('#dlgMenu')); conta = null; tela = 'pedidos'; modoLogin = 'entrar'; telaLogin('Você saiu.', 'ok'); });
 
   /* ---------- configurações do estúdio ---------- */
-  const CORES = [['#B8862B', 'Dourado'], ['#2F6FB0', 'Azul'], ['#1F8A70', 'Verde'], ['#D9622B', 'Laranja'], ['#B42357', 'Vinho'], ['#6D3FC4', 'Roxo'], ['#3F4652', 'Grafite']];
+  const CORES = [['#B8862B', 'Dourado'], ['#2F6FB0', 'Azul'], ['#1F8A70', 'Verde'], ['#D9622B', 'Laranja'], ['#B42357', 'Vinho'], ['#6650D9', 'Violeta'], ['#3F4652', 'Grafite']];
   let cfg = null;
   function desenharCores() {
     $('#cCores').replaceChildren(
@@ -1252,6 +1267,7 @@
     const e = estudio();
     cfg = { cor: (e.cor || CT.COR_PADRAO).toUpperCase(), logo: e.logo || '' };
     $('#cNome').value = e.nome || ''; $('#cWhats').value = e.whatsapp || '';
+    $('#cApelido').value = e.apelido || ''; mostrarApelido();
     $('#cEntrega').value = e.prazo_entrega || ''; $('#cCorreios').value = e.prazo_correios || '';
     $('#cPix').value = e.pix_chave || ''; $('#cPixNome').value = e.pix_nome || ''; $('#cSinal').value = e.sinal_pct ? e.sinal_pct : '';
     $('#cErro').textContent = ''; $('#cLogo').value = '';
@@ -1259,6 +1275,13 @@
     abrir($('#dlgConfig'));
   }
   $('#dlgConfig').addEventListener('close', () => CT.aplicarCor(estudio().cor));
+  // Endereço dos links: só letras minúsculas sem acento, números e hífen.
+  const limparApelido = v => String(v || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9-]+/g, '-').replace(/-{2,}/g, '-').replace(/^-/, '').slice(0, 30);
+  function mostrarApelido() {
+    $('#cDominio').textContent = location.host + '/';
+    $('#cApelidoEx').textContent = `${location.host}/${$('#cApelido').value.replace(/-$/, '') || 'seuestudio'}/1027-k7p2x`;
+  }
+  $('#cApelido').addEventListener('input', e => { const v = limparApelido(e.target.value); if (v !== e.target.value) e.target.value = v; mostrarApelido(); });
   $('#cNome').addEventListener('input', desenharPreviaLogo);
   $('#cLogoTirar').addEventListener('click', () => { cfg.logo = ''; desenharPreviaLogo(); });
   // A logo é reduzida no próprio celular antes de salvar (até 320 px), para a página do cliente abrir rápido.
@@ -1291,10 +1314,19 @@
     const ent = $('#cEntrega').value.trim() || 'de 2 a 5 dias corridos', cor_ = $('#cCorreios').value.trim() || '2 a 3 dias úteis';
     if (!nome) { $('#cErro').textContent = 'Dê um nome ao estúdio.'; return $('#cNome').focus(); }
     if (w && w.length < 10) { $('#cErro').textContent = 'WhatsApp incompleto: coloque DDD e número.'; return $('#cWhats').focus(); }
+    const apelido = limparApelido($('#cApelido').value).replace(/-+$/, '');
+    if (!/^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/.test(apelido)) { $('#cErro').textContent = 'O endereço dos links precisa ter de 3 a 30 letras, números ou hífen.'; return $('#cApelido').focus(); }
     const sinalCfg = $('#cSinal').value.trim() === '' ? 0 : Number($('#cSinal').value);
     if (!Number.isInteger(sinalCfg) || sinalCfg < 0 || sinalCfg > 100) { $('#cErro').textContent = 'O sinal é uma porcentagem inteira entre 0 e 100.'; return $('#cSinal').focus(); }
     const btn = $('#btnSalvarConfig'); btn.disabled = true;
     try {
+      if (apelido !== estudio().apelido) {
+        try { conta.estudio = await CT.pedir('/rest/v1/rpc/ct_salvar_apelido', { metodo: 'POST', comLogin: true, corpo: { p_apelido: apelido } }); }
+        catch (err) {
+          $('#cErro').textContent = /em uso/i.test(err.message) ? `O endereço "${apelido}" já é de outro estúdio. Escolha outro.` : erroAmigavel(err);
+          return $('#cApelido').focus();
+        }
+      }
       const e = await CT.pedir('/rest/v1/rpc/ct_salvar_estudio', { metodo: 'POST', comLogin: true, corpo: {
         p_nome: nome, p_whatsapp: w, p_cor: cfg.cor, p_logo: cfg.logo === (estudio().logo || '') ? null : cfg.logo, p_prazo_entrega: ent, p_prazo_correios: cor_,
         p_pix_chave: $('#cPix').value.trim(), p_pix_nome: $('#cPixNome').value.trim(), p_sinal_pct: sinalCfg } });
@@ -1324,7 +1356,7 @@
   /* ---------- painel do dono da plataforma ---------- */
   let estudios = [], sugestoes = [];
   async function irPlataforma() {
-    tela = 'plataforma'; $('#btnNovo').hidden = true; CT.aplicarCor(COR_MONTRA);
+    tela = 'plataforma'; $('#btnNovo').hidden = true; CT.aplicarCor(COR_NEXO);
     app.replaceChildren(el('p', { style: 'text-align:center;padding:60px 0;color:var(--suave)', text: 'Carregando estúdios…' }));
     try { await carregarPlataforma(); desenharPlataforma(); }
     catch (e) { app.replaceChildren(el('div', { class: 'cartao vazio' }, el('b', { text: 'Não consegui carregar os estúdios' }), erroAmigavel(e))); }
@@ -1337,7 +1369,7 @@
     estudios = estudios || []; sugestoes = sugestoes || [];
   }
   const URL_WEBHOOK = 'https://rdpraovrcfiiryklybiy.supabase.co/functions/v1/cakto-webhook';
-  const urlRetorno = () => new URL('./administrador/?pago={{callback}}', location.href).href;
+  const urlRetorno = () => new URL('./entrar/?pago={{callback}}', location.href).href;
   function linhaCopiar(rotulo, valor) {
     const campo = el('input', { readonly: true, value: valor, 'aria-label': rotulo });
     return el('div', { class: 'campo' }, el('span', { class: 'rotulo', text: rotulo }),
@@ -1431,7 +1463,7 @@
     const ativos = estudios.filter(e => e.ativo);
     const mes = estudios.reduce((t, e) => t + Number(e.pedidos_30d || 0), 0);
     app.replaceChildren(
-      cabecalho(svgIcone(48), 'Estúdios', 'Painel do dono · Montra 3D'),
+      cabecalho(svgIcone(48), 'Estúdios', 'Painel do dono · Nexo'),
       el('div', { class: 'resumo' },
         el('button', { type: 'button', tabindex: '-1' }, el('b', { text: String(ativos.length) }), el('span', { text: 'Estúdios ativos' })),
         el('button', { type: 'button', tabindex: '-1' }, el('b', { text: nf.format(mes) }), el('span', { text: 'Pedidos em 30 dias' })),
@@ -1497,7 +1529,7 @@
     finally { btn.disabled = false; }
   });
   function abrirConvite(nome, email) {
-    const url = new URL('./administrador/', location.href).href;
+    const url = new URL('./entrar/', location.href).href;
     const t = `Olá! O seu painel de pedidos do ${nome} está pronto.\n\n1. Abra: ${url}\n2. Toque em "Criar conta" e use o e-mail ${email}\n3. Confirme pelo link que chega no seu e-mail e entre.\n\nDepois, no Menu › Configurações, coloque sua logo, sua cor e seu WhatsApp. Qualquer coisa, me chama!`;
     $('#vTexto').value = t;
     $('#btnWhatsConvite').href = `https://wa.me/?text=${encodeURIComponent(t)}`;
@@ -1513,24 +1545,24 @@
   function semEstudio(titulo, texto) {
     $('#btnNovo').hidden = true;
     app.replaceChildren(el('section', { class: 'cartao login' },
-      el('div', { class: 'marca' }, svgIcone(76)), el('h1', { text: titulo }), el('p', { text: texto }),
+      el('div', { class: 'marca' }, logoNexo()), el('h1', { text: titulo }), el('p', { text: texto }),
       el('button', { class: 'btn', type: 'button', text: 'Sair desta conta', onclick: async () => { await CT.sair(); conta = null; telaLogin(); } })));
   }
   // Conta nova, ainda sem estúdio: a própria pessoa cria o painel dela.
   function semCompra() {
-    $('#btnNovo').hidden = true; CT.aplicarCor(COR_MONTRA);
+    $('#btnNovo').hidden = true; CT.aplicarCor(COR_NEXO);
     const email = (conta && conta.email) || (CT.sessao && CT.sessao.email) || '';
     app.replaceChildren(el('section', { class: 'cartao login' },
-      el('div', { class: 'marca' }, svgIcone(76)), el('h1', { text: 'Falta a assinatura' }),
+      el('div', { class: 'marca' }, logoNexo()), el('h1', { text: 'Falta a assinatura' }),
       el('p', { text: `Não encontramos uma compra com ${email}. O painel é liberado para o e-mail usado na compra.` }),
       el('div', { class: 'plano-caixa' },
-        linkAssinar('Assinar o Montra 3D', email),
+        linkAssinar('Assinar a Nexo', email),
         el('button', { class: 'btn', type: 'button', text: 'Já paguei: verificar', onclick: () => iniciar() }),
         el('p', { style: 'margin:0;color:var(--suave);font-size:14px', text: 'Comprou com outro e-mail? Saia e crie a conta com o e-mail da compra.' })),
       el('button', { class: 'link-txt', type: 'button', style: 'margin-top:12px', text: 'Sair desta conta', onclick: async () => { await CT.sair(); conta = null; modoLogin = 'entrar'; telaLogin(); } })));
   }
   async function boasVindas() {
-    $('#btnNovo').hidden = true; CT.aplicarCor(COR_MONTRA);
+    $('#btnNovo').hidden = true; CT.aplicarCor(COR_NEXO);
     if (!(conta && conta.dono_plataforma)) {
       let pode = false;
       try { pode = (await CT.pedir('/rest/v1/rpc/ct_pode_cadastrar', { metodo: 'POST', corpo: { p_email: conta.email } })) === true; } catch (_) {}
@@ -1557,7 +1589,7 @@
       } catch (e) { if (/Sem compra/.test(e.message || '')) return semCompra(); m.textContent = erroAmigavel(e); botao.disabled = false; }
     });
     app.replaceChildren(el('section', { class: 'cartao login' },
-      el('div', { class: 'marca' }, svgIcone(76)), el('h1', { text: 'Bem-vindo!' }),
+      el('div', { class: 'marca' }, logoNexo()), el('h1', { text: 'Bem-vindo!' }),
       el('p', { text: 'Falta só um passo para o seu painel ficar pronto.' }), form,
       el('button', { class: 'link-txt', type: 'button', style: 'margin-top:12px', text: 'Sair desta conta', onclick: async () => { await CT.sair(); conta = null; modoLogin = 'entrar'; telaLogin(); } })));
     nome.focus();

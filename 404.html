@@ -6,9 +6,10 @@
 <title>Acompanhe seu pedido</title>
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#F6ECDC">
-<!-- Página do pedido que o cliente vê. O GitHub Pages serve este arquivo para /p/CODIGO (endereço que não existe como arquivo).
+<!-- Página do pedido que o cliente vê. O GitHub Pages serve este arquivo para endereços que não existem como arquivo:
+     o link curto /apelido-do-estudio/1027-k7p2x e o link antigo /p/CODIGO.
      A tela em si fica em assets/pedido.js e assets/pedido.css, que a página inicial também usa na demonstração. -->
-<script>(function () { var m = location.pathname.match(/^(.*?\/)p\/[^\/]+\/?$/); if (m) document.write('<base href="' + m[1].replace(/"/g, '') + '">'); })();</script>
+<script>(function () { var m = location.pathname.match(/^(.*?\/)(?:p\/[^\/]+|[a-z0-9-]{3,30}\/\d{1,9}-[a-z0-9]{5})\/?$/i); if (m) document.write('<base href="' + m[1].replace(/"/g, '') + '">'); })();</script>
 <link rel="icon" type="image/svg+xml" href="assets/icone.svg">
 <link rel="stylesheet" href="assets/estilo.css?v=8">
 <link rel="stylesheet" href="assets/pedido.css?v=8">
@@ -32,8 +33,11 @@
   'use strict';
   const { el } = CT;
   const app = document.getElementById('app');
-  const curto = location.pathname.match(/\/p\/([^/]+)\/?$/);
-  const codigo = decodeURIComponent((curto && curto[1]) || new URLSearchParams(location.search).get('p') || '').trim();
+  // Link curto: /apelido/1027-k7p2x. Link antigo: /p/CODIGO (ou /?p=CODIGO).
+  const antigo = location.pathname.match(/\/p\/([^/]+)\/?$/);
+  const novo = !antigo && location.pathname.match(/\/([a-z0-9-]{3,30})\/(\d{1,9})-([a-z0-9]{5})\/?$/i);
+  const codigo = novo ? `${novo[1]}/${novo[2]}-${novo[3]}`.toLowerCase()
+    : decodeURIComponent((antigo && antigo[1]) || new URLSearchParams(location.search).get('p') || '').trim();
   let ultimo = null, diferencaRelogio = 0;
   let estudio = null, logoGuardada = { md5: null, logo: '' };
 
@@ -58,7 +62,7 @@
 
   async function carregar(primeira) {
     if (!CT.configurado) return semPedido('Página em configuração', 'Estamos configurando o acompanhamento.');
-    if (codigo.length < 12) return semPedido(codigo ? 'Link incompleto' : 'Página não encontrada',
+    if (!novo && codigo.length < 12) return semPedido(codigo ? 'Link incompleto' : 'Página não encontrada',
       codigo ? 'Confira se você abriu o link inteiro que enviamos.' : 'Este endereço não existe. Se você recebeu um link de pedido, abra o link inteiro.', true);
     try {
       const corpo = { p_codigo: codigo };

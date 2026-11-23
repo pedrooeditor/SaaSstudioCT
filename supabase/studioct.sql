@@ -1,5 +1,5 @@
 -- =====================================================================
--- Studio CT | Acompanhamento de pedidos
+-- Nexo | Acompanhamento de pedidos para estúdios de impressão 3D
 -- Rode no Supabase: SQL Editor > New query > Run. Pode rodar de novo sem perder dados.
 -- Clientes NUNCA leem as tabelas direto: só pela função ct_pedido_publico(codigo),
 -- que devolve apenas o pedido daquele link e só os campos que o cliente pode ver.
@@ -850,8 +850,6 @@ create table if not exists public.ct_liberados (
 alter table public.ct_liberados enable row level security;
 revoke all on public.ct_liberados from anon, authenticated;
 
--- Estúdios novos nascem com a cor da Montra 3D (o dono troca em Configurações).
-alter table public.ct_estudios alter column cor set default '#6C5AE6';
 
 -- Este e-mail pode criar conta? (comprou, foi liberado, já está num estúdio ou é dono da plataforma)
 create or replace function public.ct_email_liberado(p_email text)
@@ -971,6 +969,191 @@ begin
   delete from ct_liberados where email = lower(btrim(p_email));
 end;
 $$;
+
+-- =====================================================================
+-- Versão 9: Nexo e links curtos.
+-- Cada estúdio tem um apelido e o link do cliente fica nexostud.com.br/apelido/1027-k7p2x:
+-- número do pedido + uma chave curta e secreta, para ninguém abrir o pedido de outra pessoa trocando o número.
+-- Os links antigos (/p/codigo) continuam funcionando, e trocar o apelido não quebra os links já enviados.
+-- =====================================================================
+-- Estúdios novos nascem com a cor da Nexo (o dono troca em Configurações).
+alter table public.ct_estudios alter column cor set default '#6650D9';
+
+alter table public.ct_estudios add column if not exists apelido text;
+-- Todos os apelidos que cada estúdio já usou (o atual e os antigos). Um apelido nunca passa para outro estúdio.
+create table if not exists public.ct_apelidos (
+  apelido text primary key check (apelido ~ '^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$' and apelido !~ '--'),
+  estudio_id uuid not null references public.ct_estudios (id) on delete cascade,
+  criado_em timestamptz not null default now()
+);
+create index if not exists ct_apelidos_estudio on public.ct_apelidos (estudio_id);
+alter table public.ct_apelidos enable row level security;
+revoke all on public.ct_apelidos from anon, authenticated;
+
+-- Palavras que são páginas do site (ou podem virar) e não podem ser apelido.
+create or replace function public.ct_apelido_reservado(a text) returns boolean language sql immutable as $$
+  select a in ('p', 'entrar', 'administrador', 'admin', 'assets', 'supabase', 'api', 'app', 'www', 'nexo', 'nexostud',
+    'login', 'conta', 'contas', 'cadastro', 'assinar', 'assinatura', 'checkout', 'plano', 'planos', 'preco', 'precos',
+    'suporte', 'ajuda', 'termos', 'privacidade', 'contato', 'sobre', 'blog', 'novidades', 'status', 'demo', 'teste',
+    'pedido', 'pedidos', 'estudio', 'estudios', 'painel', 'config', 'index', 'oficial', 'seguranca', 'email', 'pix');
+$$;
+
+-- Apelido livre a partir do nome ("StudioCT 3D" -> studioct3d; se já existir, studioct3d2...).
+create or replace function public.ct_gerar_apelido(p_nome text)
+returns text language plpgsql stable security definer set search_path = public, extensions as $$
+declare base text := left(regexp_replace(ct_slug(p_nome), '[^a-z0-9]', '', 'g'), 24); cand text; n int := 1;
+begin
+  if char_length(base) < 3 then base := 'estudio' || base; end if;
+  cand := base;
+  while ct_apelido_reservado(cand) or exists (select 1 from ct_apelidos where apelido = cand) loop
+    n := n + 1; cand := base || n;
+  end loop;
+  return cand;
+end;
+$$;
+
+-- Estúdio novo já nasce com apelido.
+create or replace function public.ct_estudio_apelido_antes()
+returns trigger language plpgsql security definer set search_path = public, extensions as $$
+begin
+  if new.apelido is null then new.apelido := ct_gerar_apelido(new.nome); end if;
+  return new;
+end;
+$$;
+create or replace function public.ct_estudio_apelido_depois()
+returns trigger language plpgsql security definer set search_path = public, extensions as $$
+begin
+  insert into ct_apelidos (apelido, estudio_id) values (new.apelido, new.id) on conflict do nothing;
+  return null;
+end;
+$$;
+drop trigger if exists ct_estudio_apelido_antes on public.ct_estudios;
+create trigger ct_estudio_apelido_antes before insert on public.ct_estudios for each row execute function public.ct_estudio_apelido_antes();
+drop trigger if exists ct_estudio_apelido_depois on public.ct_estudios;
+create trigger ct_estudio_apelido_depois after insert on public.ct_estudios for each row execute function public.ct_estudio_apelido_depois();
+
+-- Estúdios que já existiam ganham apelido pela ordem de criação (o primeiro fica com o nome mais curto).
+do $$
+declare r record; a text;
+begin
+  for r in select id, nome from public.ct_estudios where apelido is null order by criado_em loop
+    a := public.ct_gerar_apelido(r.nome);
+    insert into public.ct_apelidos (apelido, estudio_id) values (a, r.id);
+    update public.ct_estudios set apelido = a where id = r.id;
+  end loop;
+end $$;
+create unique index if not exists ct_estudios_apelido on public.ct_estudios (apelido);
+alter table public.ct_estudios alter column apelido set not null;
+
+-- Chave curta do pedido: 5 letras e números, sem os que se confundem (0/o, 1/l/i).
+create or replace function public.ct_nova_chave()
+returns text language plpgsql volatile set search_path = public, extensions as $$
+declare alfabeto text := 'abcdefghjkmnpqrstuvwxyz23456789'; b bytea := gen_random_bytes(5); r text := '';
+begin
+  for i in 0..4 loop r := r || substr(alfabeto, get_byte(b, i) % 31 + 1, 1); end loop;
+  return r;
+end;
+$$;
+alter table public.ct_pedidos add column if not exists chave text;
+alter table public.ct_pedidos disable trigger user;
+update public.ct_pedidos set chave = public.ct_nova_chave() where chave is null;
+alter table public.ct_pedidos enable trigger user;
+alter table public.ct_pedidos alter column chave set not null;
+alter table public.ct_pedidos drop constraint if exists ct_chave_valida;
+alter table public.ct_pedidos add constraint ct_chave_valida check (chave ~ '^[a-z0-9]{5}$');
+
+-- Pedido novo: código do link antigo, chave do link curto, número em sequência do estúdio e etapa inicial.
+create or replace function public.ct_novo_codigo()
+returns trigger language plpgsql security definer set search_path = public, extensions as $$
+declare base text;
+begin
+  base := ct_slug(nullif(split_part(btrim(new.cliente), ' ', 1), ''));
+  if base = '' then base := ct_slug(new.titulo); end if;
+  if base = '' then base := 'pedido'; end if;
+  new.codigo := base || '-' || encode(gen_random_bytes(6), 'hex');
+  new.chave := ct_nova_chave();
+  -- Trava o estúdio enquanto numera, para dois pedidos salvos ao mesmo tempo não pegarem o mesmo número.
+  perform 1 from ct_estudios where id = new.estudio_id for update;
+  select coalesce(max(numero), 1000) + 1 into new.numero from ct_pedidos where estudio_id = new.estudio_id;
+  if new.feitos >= new.quantidade and new.etapa in ('fila', 'producao') then new.etapa := 'pronto'; end if;
+  return new;
+end;
+$$;
+-- O pedido nunca muda de estúdio, de número nem de link.
+create or replace function public.ct_mesmo_estudio()
+returns trigger language plpgsql as $$
+begin
+  new.estudio_id := old.estudio_id;
+  new.numero := old.numero;
+  new.codigo := old.codigo;
+  new.chave := old.chave;
+  return new;
+end;
+$$;
+
+-- Dados do estúdio no formato que as páginas usam (agora com o apelido).
+create or replace function public.ct_estudio_json(e public.ct_estudios) returns json language sql stable as $$
+  select json_build_object('id', e.id, 'nome', e.nome, 'whatsapp', e.whatsapp, 'cor', e.cor, 'logo', e.logo,
+    'prazo_entrega', e.prazo_entrega, 'prazo_correios', e.prazo_correios, 'ativo', e.ativo,
+    'pix_chave', e.pix_chave, 'pix_nome', e.pix_nome, 'sinal_pct', e.sinal_pct, 'apelido', e.apelido);
+$$;
+
+-- Trocar o apelido (Configurações). O antigo continua do mesmo estúdio, então os links enviados seguem abrindo.
+create or replace function public.ct_salvar_apelido(p_apelido text)
+returns json language plpgsql security definer set search_path = public, extensions as $$
+declare meu uuid := ct_meu_estudio(); a text := lower(btrim(coalesce(p_apelido, ''))); e ct_estudios;
+begin
+  if meu is null then raise exception 'Sem permissão' using errcode = '42501'; end if;
+  if a !~ '^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$' or a ~ '--' then
+    raise exception 'Apelido inválido: use de 3 a 30 letras minúsculas, números ou hífen' using errcode = '22023';
+  end if;
+  if ct_apelido_reservado(a) or exists (select 1 from ct_apelidos where apelido = a and estudio_id <> meu) then
+    raise exception 'Apelido em uso: escolha outro' using errcode = '23505';
+  end if;
+  if not exists (select 1 from ct_apelidos where apelido = a)
+     and (select count(*) from ct_apelidos where estudio_id = meu) >= 10 then
+    raise exception 'Limite de trocas: fale com o suporte para trocar o apelido' using errcode = 'P0001';
+  end if;
+  insert into ct_apelidos (apelido, estudio_id) values (a, meu) on conflict do nothing;
+  update ct_estudios set apelido = a where id = meu returning * into e;
+  return ct_estudio_json(e);
+end;
+$$;
+
+-- O que o cliente vê. Aceita o link curto (apelido/número-chave) e o código dos links antigos.
+-- Nada de telefone ou dados internos, e com a marca do estúdio. p_logo_tenho evita baixar a mesma logo de novo.
+create or replace function public.ct_pedido_publico(p_codigo text, p_logo_tenho text default null)
+returns json language plpgsql stable security definer set search_path = public, extensions as $$
+declare m text[]; v_id uuid;
+begin
+  m := regexp_match(lower(btrim(coalesce(p_codigo, ''))), '^([a-z0-9-]{3,30})/([0-9]{1,9})-([a-z0-9]{5})$');
+  if m is not null then
+    select p.id into v_id from ct_apelidos a join ct_pedidos p on p.estudio_id = a.estudio_id
+    where a.apelido = m[1] and p.numero = m[2]::int and p.chave = m[3];
+  elsif char_length(coalesce(p_codigo, '')) >= 12 then
+    select p.id into v_id from ct_pedidos p where p.codigo = p_codigo;
+  end if;
+  if v_id is null then return null; end if;
+  return (select json_build_object(
+    'numero', p.numero, 'titulo', p.titulo, 'tipo', p.tipo, 'cliente', split_part(btrim(p.cliente), ' ', 1),
+    'quantidade', p.quantidade, 'feitos', p.feitos, 'etapa', p.etapa, 'envio', p.envio,
+    'termino', p.inicio + make_interval(secs => p.prazo_horas * 3600),
+    'mensagem', p.mensagem, 'atualizado_em', p.atualizado_em, 'agora', now(),
+    'whatsapp', coalesce(nullif(p.whatsapp_atendimento, ''), nullif(e.whatsapp, ''), ''),
+    'pagamento', case when p.valor is not null then json_build_object('valor', p.valor, 'frete', coalesce(p.frete, 0),
+      'sinal_pct', coalesce(p.sinal_pct, 0), 'sinal_pago', p.sinal_pago, 'quitado', p.quitado,
+      'pix_chave', e.pix_chave, 'pix_nome', e.pix_nome) end,
+    'estudio', json_build_object('nome', e.nome, 'cor', e.cor,
+      'logo', case when p_logo_tenho is not null and md5(e.logo) = p_logo_tenho then null else e.logo end,
+      'logo_md5', md5(e.logo), 'prazo_entrega', e.prazo_entrega, 'prazo_correios', e.prazo_correios),
+    -- No ritmo atual (só depois de 1 h de produção): horas para terminar o que falta.
+    'ritmo_horas', case when p.etapa = 'producao' and p.feitos > 0 and p.feitos < p.quantidade and now() - p.inicio > interval '1 hour'
+      then round(((p.quantidade - p.feitos) / (p.feitos / (extract(epoch from now() - p.inicio) / 3600)))::numeric, 2) end)
+    from ct_pedidos p join ct_estudios e on e.id = p.estudio_id where p.id = v_id);
+end;
+$$;
+revoke all on function public.ct_pedido_publico(text, text) from public;
+grant execute on function public.ct_pedido_publico(text, text) to anon, authenticated;
 
 -- =====================================================================
 -- ADMINISTRADORES: troque pelo seu e-mail (em minúsculas).

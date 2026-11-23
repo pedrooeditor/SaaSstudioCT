@@ -1,0 +1,20 @@
+/* Nexo: fontes e cores da marca. Usado na página inicial e na área de membros.
+   A página do pedido (o que o cliente do estúdio vê) não carrega este arquivo: lá aparece só a marca do estúdio. */
+@font-face { font-family: "Manrope"; font-style: normal; font-weight: 200 800; font-display: swap;
+  src: url(fontes/manrope.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "IBM Plex Mono"; font-style: normal; font-weight: 500; font-display: swap;
+  src: url(fontes/plex-mono-500.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+:root {
+  --nexo-ink: #17142B; --nexo-violet: #6650D9; --nexo-violet-deep: #372875; --nexo-lavender: #E8E2FF;
+  --nexo-paper: #F7F5FF; --nexo-line: #E2DDF1; --nexo-muted: #6D6880; --nexo-white: #FFFFFF;
+  --nexo-fonte: "Manrope", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  --nexo-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --serifa: var(--nexo-fonte);
+}
+body { font-family: var(--nexo-fonte); }
+/* Logotipo: símbolo + "nexo" escrito com a fonte da marca. */
+.nexo-logo { display: inline-flex; align-items: center; gap: .32em; color: var(--nexo-ink); text-decoration: none;
+  font: 750 1em/1 var(--nexo-fonte); letter-spacing: -.055em; white-space: nowrap; }
+.nexo-logo img { width: 1.3em; height: 1.3em; }

@@ -3,95 +3,104 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Montra 3D | Seu cliente acompanha o pedido sozinho</title>
+<title>Nexo | Seu cliente acompanha o pedido sozinho</title>
 <meta name="description" content="Ferramenta para estúdios de impressão 3D: você manda um link e o cliente acompanha a produção, o prazo e o pagamento por Pix. Sem instalar nada.">
-<meta name="theme-color" content="#EEEBFC">
-<meta property="og:title" content="Montra 3D | Seu cliente acompanha o pedido sozinho">
+<meta name="theme-color" content="#F7F5FF">
+<meta property="og:title" content="Nexo | Seu cliente acompanha o pedido sozinho">
+<meta property="og:site_name" content="Nexo">
 <meta property="og:description" content="Você manda um link. O cliente vê a produção andando, o prazo e o valor a pagar.">
 <meta property="og:type" content="website">
-<meta property="og:image" content="https://studioct3d.com.br/assets/montra-512.png">
+<meta property="og:image" content="https://nexostud.com.br/assets/nexo-og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <!-- Links antigos de pedido (/?p=CODIGO) continuam funcionando: vão para a página do pedido. -->
 <script>(function () { var p = new URLSearchParams(location.search).get('p'); if (p) location.replace('p/' + encodeURIComponent(p)); })();</script>
-<link rel="icon" type="image/svg+xml" href="assets/montra-icone.svg">
-<link rel="apple-touch-icon" href="assets/montra-apple-touch-icon.png">
+<link rel="icon" type="image/svg+xml" href="assets/nexo.svg">
+<link rel="apple-touch-icon" href="assets/nexo-apple-touch-icon.png">
+<link rel="preload" href="assets/fontes/manrope.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/estilo.css?v=9">
 <link rel="stylesheet" href="assets/pedido.css?v=9">
+<link rel="stylesheet" href="assets/nexo.css?v=1">
 <style>
-  /* Marca Montra 3D: lavanda, violeta e roxo profundo (a demonstração do celular usa a cor do estúdio). */
-  :root { --cor: #5B49D6; --ouro: #6C5AE6; --ouro-claro: #A99CF5; --fundo: #EEEBFC; --cartao: #FFFFFF; --texto: #241C36; --suave: #625A78;
-    --linha: #DDD6F5; --trilho: #E6E1FB; --rodape-dlg: #F4F1FE; --texto-btn: #FFFFFF; --borda-btn: #4A36A9;
-    --sombra: 0 1px 2px rgb(36 28 54 / .06), 0 14px 32px -18px rgb(57 38 109 / .35);
-    --escuro: #1E1638; --creme: #F4F1FE; --titulo: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; }
-  .btn-cor, a.btn-cor { background: linear-gradient(180deg, #7B6AF0, #5B49D6); border-color: #4A36A9; color: #fff; box-shadow: 0 8px 20px -10px rgb(74 54 169 / .8); }
+  /* Marca Nexo (kit de marca): papel, violeta e grafite. Manrope nos textos e IBM Plex Mono nos rótulos e números.
+     A demonstração do celular usa a cor e a fonte do estúdio, como a página real do cliente. */
+  :root { --cor: #6650D9; --ouro: #6650D9; --ouro-claro: #B9ADF6; --fundo: #F7F5FF; --cartao: #FFFFFF; --texto: #17142B; --suave: #6D6880;
+    --linha: #E2DDF1; --trilho: #E8E2FF; --rodape-dlg: #F7F5FF; --texto-btn: #FFFFFF; --borda-btn: #6650D9;
+    --sombra: 0 1px 2px rgb(23 20 43 / .05);
+    --escuro: #17142B; --creme: #F7F5FF; --titulo: var(--nexo-fonte); }
+  .btn-cor, a.btn-cor { background: #6650D9; border-color: #6650D9; color: #fff; box-shadow: none; }
+  .btn-cor:hover { background: #5640C8; border-color: #5640C8; }
+  :focus-visible { outline: 3px solid #6650D9; outline-offset: 2px; }
   html { scroll-behavior: smooth; }
-  body { font-size: 17px; line-height: 1.55; }
+  body { font-size: 17px; line-height: 1.55; background: var(--fundo); color: var(--texto); }
   a { color: inherit; }
-  .faixa-larga { width: min(1120px, 100% - 40px); margin-inline: auto; }
-  h1, h2, h3 { font-family: var(--titulo); font-weight: 800; letter-spacing: -.02em; line-height: 1.1; margin: 0; }
+  .faixa-larga { width: min(1120px, 100% - 32px); margin-inline: auto; }
+  h1, h2, h3 { font-family: var(--titulo); font-weight: 700; letter-spacing: -.025em; line-height: 1.1; margin: 0; }
   h2 { font-size: clamp(28px, 4.2vw, 42px); }
-  .sobre { margin: 0 0 12px; font-size: 13px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--cor); }
+  .sobre { margin: 0 0 14px; font: 500 13px var(--nexo-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cor); }
   .lead { margin: 14px 0 0; font-size: clamp(17px, 2vw, 20px); color: var(--suave); max-width: 46ch; }
-  .btn-grande { min-height: 54px; padding: 0 26px; font-size: 17px; border-radius: 14px; }
+  .btn-grande { min-height: 54px; padding: 0 26px; font-size: 17px; font-weight: 700; border-radius: 14px; }
 
   /* Topo */
-  .barra-topo { position: sticky; top: 0; z-index: 40; background: #EEEBFC; border-bottom: 1px solid var(--linha); isolation: isolate; }
+  .barra-topo { position: sticky; top: 0; z-index: 40; background: #FFFFFF; border-bottom: 1px solid var(--linha); isolation: isolate; }
   .barra-topo .faixa-larga { display: flex; align-items: center; gap: 18px; min-height: 64px; }
-  .marca-topo { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 800 19px var(--titulo); letter-spacing: -.02em; white-space: nowrap; color: var(--texto); }
-  .marca-topo img { width: 36px; height: auto; }
-  .nav { display: flex; gap: 22px; margin-left: auto; font-size: 15px; font-weight: 650; }
+  .marca-topo { font-size: 27px; }
+  .nav { display: flex; gap: 22px; margin-left: auto; font-size: 15px; font-weight: 600; }
   .nav a { text-decoration: none; color: var(--suave); }
   .nav a:hover { color: var(--texto); }
   .barra-topo .btn { min-height: 42px; white-space: nowrap; }
-  @media (max-width: 760px) { .nav { display: none; } .barra-topo .btn { margin-left: auto; padding: 0 12px; font-size: 14.5px; } .marca-topo { font-size: 17px; } }
+  @media (max-width: 760px) { .nav { display: none; } .barra-topo .btn { margin-left: auto; padding: 0 12px; font-size: 14.5px; } .marca-topo { font-size: 24px; } }
 
-  /* Abertura */
+  /* Abertura: pontos espaçados como textura de apoio */
   .abertura { position: relative; overflow: hidden; padding: clamp(36px, 6vw, 72px) 0 clamp(40px, 6vw, 80px);
-    background:
-      radial-gradient(900px 460px at 85% -10%, rgb(108 90 230 / .22), transparent 70%),
-      repeating-linear-gradient(180deg, transparent 0 13px, rgb(74 54 169 / .04) 13px 14px); }
-  .abertura h1 { font-size: clamp(36px, 5.6vw, 62px); letter-spacing: -.01em; max-width: 13ch; }
+    background-image: radial-gradient(rgb(102 80 217 / .13) 1.2px, transparent 1.6px); background-size: 26px 26px; }
+  .abertura h1 { font-size: clamp(36px, 5.6vw, 62px); letter-spacing: -.035em; max-width: 13ch; }
   .abertura h1 em { font-style: normal; color: var(--cor); }
-  .selinho { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 18px; padding: 6px 14px; border-radius: 999px; background: var(--cartao); border: 1px solid var(--linha); font-size: 14px; font-weight: 700; }
-  .selinho i { width: 8px; height: 8px; border-radius: 50%; background: var(--verde); }
+  .selinho { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 18px; padding: 6px 14px; border-radius: 999px; background: var(--cartao); border: 1px solid var(--linha);
+    font: 500 12.5px var(--nexo-mono); letter-spacing: .06em; text-transform: uppercase; }
+  .selinho i { width: 8px; height: 8px; border-radius: 50%; background: var(--cor); }
   .acoes-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 26px; }
   .acoes-topo .entrar { font-weight: 700; color: var(--cor); }
   .garantias { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 22px 0 0; padding: 0; list-style: none; color: var(--suave); font-size: 15px; }
-  .garantias li::before { content: "✓ "; color: var(--verde-escuro); font-weight: 800; }
+  .garantias li::before { content: "✓ "; color: var(--cor); font-weight: 800; }
 
   /* Demonstração: painel do estúdio de um lado, celular do cliente do outro */
   .palco { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: clamp(24px, 5vw, 64px); align-items: center; }
   .lado-painel { display: grid; gap: 14px; }
-  .rotulo-palco { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--suave); }
-  .rotulo-palco b { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--texto); color: var(--creme); font-size: 13px; letter-spacing: 0; }
-  .painel-demo { display: grid; gap: 10px; max-width: 520px; }
+  .rotulo-palco { display: flex; align-items: center; gap: 10px; font: 500 12.5px var(--nexo-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--suave); }
+  .rotulo-palco b { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--cor); color: #fff; font-size: 12.5px; letter-spacing: 0; }
+  .painel-demo { display: grid; gap: 10px; max-width: 520px; border: 1px solid var(--linha); }
   .painel-demo .cabeca-p { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
   .painel-demo h3 { font-size: 19px; }
   .painel-demo .sub { color: var(--suave); font-size: 13.5px; }
-  .painel-demo .sub b { color: var(--texto); }
+  .painel-demo .sub b { color: var(--texto); font-family: var(--nexo-mono); font-weight: 500; }
   .painel-demo .meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; font-size: 14px; }
   .painel-demo .pg { font-size: 14px; color: var(--suave); }
   .painel-demo .pg b { color: var(--texto); }
   .painel-demo .acoes { display: flex; flex-wrap: wrap; gap: 8px; }
   .painel-demo .acoes .btn { min-height: 44px; padding: 0 14px; font-size: 15px; }
   .painel-demo .acoes .grande { flex: 1 1 100%; min-height: 50px; font-size: 16px; }
-  .btn-verde { background: linear-gradient(180deg, #2A9958, #1A6E3D); border-color: #1A6E3D; color: #fff; }
+  .btn-verde { background: #1E7A44; border-color: #1E7A44; color: #fff; }
   .painel-demo .btn.toque { animation: toque .5s ease-out; }
-  @keyframes toque { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgb(108 90 230 / .55); } 40% { transform: scale(.95); } 100% { transform: scale(1); box-shadow: 0 0 0 16px rgb(184 134 43 / 0); } }
+  @keyframes toque { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgb(102 80 217 / .5); } 40% { transform: scale(.95); } 100% { transform: scale(1); box-shadow: 0 0 0 16px rgb(102 80 217 / 0); } }
   .dica-palco { margin: 0; color: var(--suave); font-size: 15px; max-width: 46ch; }
   .dica-palco b { color: var(--texto); }
-  .cores-demo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; color: var(--suave); font-weight: 650; }
+  .cores-demo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; color: var(--suave); font-weight: 600; }
   .cores-demo button { width: 30px; height: 30px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 1px var(--linha); padding: 0; }
   .cores-demo button[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--texto); }
-  .fone { position: relative; width: 336px; max-width: 100%; padding: 11px; border-radius: 46px; background: linear-gradient(160deg, #3A2E5C, #120D20); box-shadow: 0 40px 70px -30px rgb(30 22 56 / .75), inset 0 0 0 2px rgb(255 255 255 / .08); }
-  .fone::before { content: ""; position: absolute; top: 20px; left: 50%; width: 84px; height: 20px; margin-left: -42px; border-radius: 12px; background: #120D20; z-index: 2; }
-  .fone .tela { height: 620px; overflow-y: auto; overscroll-behavior: contain; border-radius: 36px; background: var(--fundo); padding: 46px 13px 18px; scrollbar-width: none; }
+  .fone { position: relative; width: 336px; max-width: 100%; padding: 11px; border-radius: 46px; background: #17142B; box-shadow: 0 40px 70px -34px rgb(23 20 43 / .6), inset 0 0 0 2px rgb(255 255 255 / .08); }
+  .fone::before { content: ""; position: absolute; top: 20px; left: 50%; width: 84px; height: 20px; margin-left: -42px; border-radius: 12px; background: #17142B; z-index: 2; }
+  /* Dentro do celular vale a identidade do estúdio (fonte e cores da página real do cliente), não a da Nexo. */
+  .fone .tela { height: 620px; overflow-y: auto; overscroll-behavior: contain; border-radius: 36px; background: var(--fundo); padding: 46px 13px 18px; scrollbar-width: none;
+    font: 15px/1.5 "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; --serifa: Georgia, "Times New Roman", serif; }
   .fone .tela::-webkit-scrollbar { display: none; }
   .fone .acomp .titulo { font-size: 21px; }
   .fone .acomp .imp { width: 116px; }
   .fone .acomp .pct b { font-size: 32px; }
   .fone .acomp .progresso { gap: 12px; }
   .fone .acomp .cartao { padding: 15px; }
-  .fone .acomp h1, .fone .acomp h2, .fone .acomp h3 { letter-spacing: 0; }
+  .fone .acomp h1, .fone .acomp h2, .fone .acomp h3 { letter-spacing: 0; font-family: var(--serifa); }
   /* Fora da tela, as animações da demonstração param (economiza bateria e processador). */
   .fone.fora *, .fone.fora *::before, .fone.fora *::after { animation-play-state: paused !important; }
   @media (max-width: 880px) {
@@ -102,67 +111,76 @@
 
   /* O problema */
   .problema { background: var(--escuro); color: var(--creme); padding: clamp(48px, 7vw, 90px) 0; }
-  .problema .sobre { color: var(--ouro); }
-  .problema .lead { color: #D9D2F2; }
+  .problema .sobre { color: #B9ADF6; }
+  .problema .lead { color: #CFC9E6; }
   .problema .dois { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(28px, 5vw, 64px); align-items: center; }
-  .conversa { display: grid; gap: 10px; justify-items: start; padding: 22px; border-radius: 24px; background: #140E28; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .06); }
-  .balao { max-width: 88%; padding: 9px 13px 7px; border-radius: 4px 16px 16px 16px; background: #2E2450; font-size: 15.5px; line-height: 1.35; }
-  .balao small { display: block; margin-top: 2px; text-align: right; font-size: 11px; opacity: .6; }
-  .balao.meu { justify-self: end; border-radius: 16px 4px 16px 16px; background: #1E5B3A; }
-  .conversa .conta-msgs { justify-self: center; margin-top: 4px; padding: 5px 12px; border-radius: 999px; background: var(--perigo); font-size: 13px; font-weight: 700; }
+  .conversa { display: grid; gap: 10px; justify-items: start; padding: 22px; border-radius: 22px; background: #100E20; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .07); }
+  .balao { max-width: 88%; padding: 9px 13px 7px; border-radius: 4px 16px 16px 16px; background: #2A2647; font-size: 15.5px; line-height: 1.35; }
+  .balao small { display: block; margin-top: 2px; text-align: right; font: 500 11px var(--nexo-mono); opacity: .6; }
+  .balao.meu { justify-self: end; border-radius: 16px 4px 16px 16px; background: #372875; }
+  .conversa .conta-msgs { justify-self: center; margin-top: 4px; padding: 5px 12px; border-radius: 999px; background: var(--perigo); font: 500 12.5px var(--nexo-mono); }
   @media (max-width: 800px) { .problema .dois { grid-template-columns: 1fr; } }
 
   /* Seções claras */
   .secao { padding: clamp(48px, 7vw, 90px) 0; }
   .secao.creme { background: var(--cartao); border-block: 1px solid var(--linha); }
-  .passos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 34px 0 0; padding: 0; list-style: none; counter-reset: passo; }
-  .passos li { position: relative; padding: 26px 22px 22px; border-radius: 20px; background: var(--fundo); border: 1px solid var(--linha); counter-increment: passo; }
-  .passos li::before { content: counter(passo); display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 14px; border-radius: 14px; font: 700 22px var(--serifa);
-    background: linear-gradient(160deg, var(--ouro-claro), var(--ouro) 60%, var(--cor)); color: #fff; font-family: var(--titulo); }
+  /* Passos: uma trilha fina com os pontos de cada etapa. */
+  .passos { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 38px 0 0; padding: 0; list-style: none; counter-reset: passo; }
+  .passos::before { content: ""; position: absolute; top: 21px; left: 22px; right: calc((100% - 36px) / 3 - 22px); height: 2px; background: var(--linha); }
+  .passos li { position: relative; padding: 0 8px 0 0; counter-increment: passo; }
+  .passos li::before { content: "0" counter(passo); position: relative; display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 16px; border-radius: 50%;
+    background: var(--cartao); border: 2px solid var(--cor); color: var(--cor); font: 500 15px var(--nexo-mono); }
   .passos h3 { font-size: 21px; margin-bottom: 6px; }
   .passos p { margin: 0; color: var(--suave); font-size: 16px; }
   .recursos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 34px; }
-  .recurso { padding: 22px; border-radius: 20px; background: var(--cartao); box-shadow: var(--sombra); }
+  .recurso { padding: 24px; border-radius: 22px; background: var(--cartao); border: 1px solid var(--linha); }
   .recurso svg { width: 34px; height: 34px; color: var(--cor); margin-bottom: 10px; }
   .recurso h3 { font-size: 19px; margin-bottom: 6px; }
   .recurso p { margin: 0; color: var(--suave); font-size: 15.5px; }
-  @media (max-width: 860px) { .passos, .recursos { grid-template-columns: 1fr; } }
+  @media (max-width: 860px) {
+    .recursos { grid-template-columns: 1fr; }
+    .passos { grid-template-columns: 1fr; gap: 26px; }
+    .passos::before { top: 22px; bottom: 22px; left: 21px; right: auto; width: 2px; height: auto; }
+    .passos li { padding-left: 62px; min-height: 44px; }
+    .passos li::before { position: absolute; left: 0; top: 0; margin: 0; }
+  }
 
   /* Dúvidas */
   .duvidas { display: grid; gap: 10px; max-width: 800px; margin-top: 30px; }
-  .duvidas details { border-radius: 16px; background: var(--fundo); border: 1px solid var(--linha); }
+  .duvidas details { border-radius: 14px; background: var(--cartao); border: 1px solid var(--linha); }
   .duvidas summary { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 16px 18px; font-weight: 700; cursor: pointer; list-style: none; }
   .duvidas summary::-webkit-details-marker { display: none; }
-  .duvidas summary::after { content: "+"; font: 700 22px var(--serifa); color: var(--cor); }
+  .duvidas summary::after { content: "+"; font: 500 22px var(--nexo-mono); color: var(--cor); }
   .duvidas details[open] summary::after { content: "–"; }
   .duvidas p { margin: 0; padding: 0 18px 18px; color: var(--suave); }
 
   /* Chamada final e rodapé */
-  .final { padding: clamp(48px, 7vw, 86px) 0; text-align: center; background: var(--escuro); color: var(--creme);
-    background-image: repeating-linear-gradient(180deg, transparent 0 13px, rgb(255 255 255 / .03) 13px 14px); }
+  .final { padding: clamp(48px, 7vw, 86px) 0; text-align: center; background: var(--escuro); color: var(--creme); }
   .final h2 { max-width: 18ch; margin-inline: auto; }
-  .final p { margin: 14px auto 26px; max-width: 44ch; color: #D9D2F2; }
-  .rodape-site { padding: 24px 0 calc(24px + env(safe-area-inset-bottom)); background: #140E28; color: #B4AACF; font-size: 14px; }
-  .rodape-site .faixa-larga { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 20px; }
-  .rodape-site a { color: var(--ouro-claro); }
+  .final p { margin: 14px auto 26px; max-width: 44ch; color: #CFC9E6; }
+  .rodape-site { padding: 26px 0 calc(26px + env(safe-area-inset-bottom)); background: #100E20; color: #A9A3C2; font-size: 14px; }
+  .rodape-site .faixa-larga { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 20px; }
+  .rodape-site .nexo-logo { color: #FFFFFF; font-size: 22px; }
+  .rodape-site .assinatura { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+  .rodape-site a { color: #B9ADF6; }
   /* Seções abaixo da dobra só são desenhadas quando chegam perto da tela. */
   .problema, .secao, .final { content-visibility: auto; contain-intrinsic-size: auto 700px; }
   /* Plano */
   .plano { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: clamp(20px, 4vw, 48px); align-items: start; margin-top: 30px; }
-  .cartao-plano { padding: clamp(22px, 3vw, 32px); border-radius: 24px; background: var(--cartao); box-shadow: var(--sombra); border: 2px solid var(--ouro); }
-  .cartao-plano .nome-plano { display: flex; align-items: center; gap: 10px; font: 800 18px var(--titulo); }
-  .cartao-plano .nome-plano img { width: 34px; height: auto; }
-  .preco { display: flex; align-items: baseline; gap: 6px; margin: 14px 0 4px; }
-  .preco b { font: 800 clamp(40px, 6vw, 54px)/1 var(--titulo); letter-spacing: -.03em; color: var(--cor); }
+  .cartao-plano { padding: clamp(22px, 3vw, 32px); border-radius: 22px; background: var(--cartao); border: 2px solid var(--cor); }
+  .cartao-plano .nome-plano { display: flex; align-items: center; gap: 12px; font: 500 13px var(--nexo-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--suave); }
+  .cartao-plano .nome-plano .nexo-logo { font-size: 24px; letter-spacing: -.055em; text-transform: none; }
+  .preco { display: flex; align-items: baseline; gap: 6px; margin: 16px 0 4px; }
+  .preco b { font: 700 clamp(40px, 6vw, 54px)/1 var(--titulo); letter-spacing: -.04em; color: var(--cor); }
   .preco span { color: var(--suave); font-weight: 700; }
   .cartao-plano .obs { margin: 0 0 16px; color: var(--suave); font-size: 15px; }
   .itens-plano { display: grid; gap: 8px; margin: 0 0 20px; padding: 0; list-style: none; }
   .itens-plano li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; }
-  .itens-plano li::before { content: "✓"; color: var(--verde-escuro); font-weight: 900; }
+  .itens-plano li::before { content: "✓"; color: var(--cor); font-weight: 900; }
   .cartao-plano .btn { width: 100%; }
-  .comecar { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; counter-reset: c; }
+  .comecar { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; counter-reset: c; }
   .comecar li { display: grid; grid-template-columns: 38px 1fr; gap: 12px; align-items: start; counter-increment: c; }
-  .comecar li::before { content: counter(c); display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: var(--trilho); color: var(--cor); font: 800 18px var(--titulo); }
+  .comecar li::before { content: "0" counter(c); display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--trilho); color: var(--cor); font: 500 14px var(--nexo-mono); }
   .comecar b { display: block; }
   .comecar span { color: var(--suave); font-size: 15.5px; }
   @media (max-width: 860px) { .plano { grid-template-columns: 1fr; } }
@@ -172,14 +190,14 @@
 
 <header class="barra-topo">
   <div class="faixa-larga">
-    <a class="marca-topo" href="./"><img src="assets/montra.svg" alt="" width="36" height="31">Montra 3D</a>
+    <a class="marca-topo nexo-logo" href="./" aria-label="Nexo, página inicial"><img src="assets/nexo.svg" alt="" width="35" height="35">nexo</a>
     <nav class="nav" aria-label="Seções da página">
       <a href="#como-funciona">Como funciona</a>
       <a href="#recursos">Recursos</a>
       <a href="#plano">Plano</a>
       <a href="#duvidas">Dúvidas</a>
     </nav>
-    <a class="btn btn-cor" href="administrador/">Área de membros</a>
+    <a class="btn btn-cor" href="entrar/">Área de membros</a>
   </div>
 </header>
 
@@ -193,7 +211,7 @@
       <p class="lead">Você manda um link uma vez. Ele vê a produção andando, o prazo e o valor a pagar. E você para de responder “já ficou pronto?” o dia inteiro.</p>
       <div class="acoes-topo">
         <a class="btn btn-cor btn-grande js-assinar" href="https://pay.cakto.com.br/mrcmh5t" rel="noopener">Assinar por R$ 37,90/mês</a>
-        <a class="entrar" href="administrador/">Já assinei: entrar</a>
+        <a class="entrar" href="entrar/">Já assinei: entrar</a>
       </div>
       <ul class="garantias">
         <li>Sem instalar nada</li>
@@ -283,7 +301,7 @@
       <h2>Um plano, tudo incluso.</h2>
       <div class="plano">
         <div class="cartao-plano">
-          <div class="nome-plano"><img src="assets/montra.svg" alt="" width="34" height="29" loading="lazy">Montra 3D · mensal</div>
+          <div class="nome-plano"><span class="nexo-logo"><img src="assets/nexo.svg" alt="" width="31" height="31" loading="lazy">nexo</span>Plano mensal</div>
           <div class="preco"><b>R$ 37,90</b><span>/mês</span></div>
           <p class="obs">No cartão ou no Pix. Sem fidelidade e com 7 dias de garantia.</p>
           <ul class="itens-plano">
@@ -297,7 +315,7 @@
         </div>
         <ol class="comecar" aria-label="Como começar">
           <li><div><b>Assine</b><span>O pagamento é feito pela Cakto, com recibo no seu e-mail.</span></div></li>
-          <li><div><b>Crie a sua conta</b><span>Em <a href="administrador/#criar">Área de membros</a>, use o mesmo e-mail que você colocou na compra e escolha uma senha.</span></div></li>
+          <li><div><b>Crie a sua conta</b><span>Em <a href="entrar/#criar">Área de membros</a>, use o mesmo e-mail que você colocou na compra e escolha uma senha.</span></div></li>
           <li><div><b>Monte o seu painel</b><span>Coloque o nome, a logo e a cor do seu estúdio e mande o primeiro link ainda hoje.</span></div></li>
         </ol>
       </div>
@@ -310,7 +328,7 @@
       <h2>Perguntas que todo mundo faz.</h2>
       <div class="duvidas">
         <details><summary>Preciso instalar alguma coisa?</summary><p>Não. Tudo funciona no navegador, no celular e no computador, mesmo nos mais simples.</p></details>
-        <details><summary>Já assinei. Como eu entro?</summary><p>Abra a <a href="administrador/#criar">Área de membros</a>, toque em "Criar conta" e use o mesmo e-mail que você colocou na compra. Escolha uma senha, confirme pelo link que chega no seu e-mail e pronto. A confirmação do pagamento pode levar alguns minutos.</p></details>
+        <details><summary>Já assinei. Como eu entro?</summary><p>Abra a <a href="entrar/#criar">Área de membros</a>, toque em "Criar conta" e use o mesmo e-mail que você colocou na compra. Escolha uma senha, confirme pelo link que chega no seu e-mail e pronto. A confirmação do pagamento pode levar alguns minutos.</p></details>
         <details><summary>O meu cliente precisa criar conta?</summary><p>Não. Ele só abre o link que você envia. O link é secreto: só quem recebeu consegue ver o pedido.</p></details>
         <details><summary>Como eu recebo o pagamento?</summary><p>Direto na sua conta. A página mostra o valor e a sua chave Pix para o cliente copiar. O dinheiro não passa pela ferramenta: quando ele cair, você marca “pagamento recebido” no painel.</p></details>
         <details><summary>Quanto custa?</summary><p><b>R$ 37,90 por mês</b>, no cartão ou no Pix. Sem fidelidade: você cancela quando quiser, e tem 7 dias de garantia para pedir o dinheiro de volta. O pagamento é feito pela Cakto, com recibo por e-mail.</p></details>
@@ -330,7 +348,7 @@
 </main>
 
 <footer class="rodape-site">
-  <div class="faixa-larga"><span>Montra 3D · Acompanhamento de pedidos para estúdios de impressão 3D</span><a href="administrador/">Área de membros</a></div>
+  <div class="faixa-larga"><span class="assinatura"><span class="nexo-logo"><img src="assets/nexo.svg" alt="" width="29" height="29" loading="lazy">nexo</span><span>IA e automação para o trabalho real</span></span><a href="entrar/">Área de membros</a></div>
 </footer>
 
 <script src="config.js?v=9"></script>
@@ -345,7 +363,7 @@
   const R = CT.dinheiro, HORA = 3600000;
   const POR_CHAPA = 10, H_CHAPA = 2;
   const inicial = () => ({ feitos: 0, etapa: 'fila', sinal_pago: false, quitado: false });
-  let d = inicial(), automatico = true, relogio = null, cor = '#6C5AE6';
+  let d = inicial(), automatico = true, relogio = null, cor = '#6650D9';
   const QTD = 40, VALOR = 150, FRETE = 20, SINAL = 40;
 
   function pedido() {
@@ -425,7 +443,7 @@
   }
 
   // Cor da marca: muda só dentro do celular da demonstração.
-  const CORES = [['#6C5AE6', 'Violeta'], ['#B8862B', 'Dourado'], ['#2F6FB0', 'Azul'], ['#1F8A70', 'Verde'], ['#D9622B', 'Laranja'], ['#B42357', 'Vinho'], ['#3F4652', 'Grafite']];
+  const CORES = [['#6650D9', 'Violeta'], ['#B8862B', 'Dourado'], ['#2F6FB0', 'Azul'], ['#1F8A70', 'Verde'], ['#D9622B', 'Laranja'], ['#B42357', 'Vinho'], ['#3F4652', 'Grafite']];
   const caixaCores = document.getElementById('coresDemo');
   // O dourado é a paleta original do sistema: aqui ela é escrita por extenso, porque a página inicial tem cores próprias.
   const DOURADO = { '--cor': '#B8862B', '--ouro': '#D9A93F', '--ouro-claro': '#F1D488', '--fundo': '#F6ECDC', '--cartao': '#FFFAF2', '--linha': '#E9D8BC',
