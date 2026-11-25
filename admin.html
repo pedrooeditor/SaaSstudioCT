@@ -1568,12 +1568,38 @@
       try { pode = (await CT.pedir('/rest/v1/rpc/ct_pode_cadastrar', { metodo: 'POST', corpo: { p_email: conta.email } })) === true; } catch (_) {}
       if (!pode) return semCompra();
     }
+    // Primeira vez: o perfil do estúdio (nome, logo e cor). Depois dá para trocar em Configurações.
+    const ob = { cor: COR_NEXO, logo: '' };
     const nome = el('input', { id: 'obNome', maxlength: '80', placeholder: 'Ex.: Impressões da Ana', autocomplete: 'organization' });
     const whats = el('input', { id: 'obWhats', type: 'tel', inputmode: 'tel', placeholder: '(11) 98888-7777' });
+    const previa = el('div', { class: 'previa', id: 'obPrevia' });
+    const arquivo = el('input', { id: 'obLogo', type: 'file', accept: 'image/*', class: 'sr' });
+    const tirar = el('button', { class: 'btn', type: 'button', id: 'obLogoTirar', text: 'Tirar logo', onclick: () => { ob.logo = ''; arquivo.value = ''; desenharPerfil(); } });
+    const caixaCores = el('div', { class: 'cores', id: 'obCores', role: 'group', 'aria-label': 'Cor da marca' });
     const m = el('p', { class: 'msg ruim', id: 'obMsg' });
     const botao = el('button', { class: 'btn btn-cor', type: 'submit', text: 'Criar meu painel' });
+    function desenharPerfil() {
+      previa.replaceChildren(CT.logoEstudio({ nome: nome.value.trim() || 'Seu estúdio', logo: ob.logo }, 72));
+      tirar.hidden = !ob.logo;
+      caixaCores.replaceChildren(
+        ...CORES.map(([c, n]) => el('button', { type: 'button', class: c === ob.cor ? 'on' : '', style: `background:${c}`, 'aria-label': n, title: n, 'aria-pressed': String(c === ob.cor), onclick: () => escolherCorInicial(c) })),
+        el('input', { type: 'color', 'aria-label': 'Outra cor', title: 'Outra cor', value: ob.cor.toLowerCase(), oninput: e => escolherCorInicial(e.target.value.toUpperCase()) }));
+    }
+    function escolherCorInicial(c) { ob.cor = c; CT.aplicarCor(c); desenharPerfil(); }
+    nome.addEventListener('input', () => previa.replaceChildren(CT.logoEstudio({ nome: nome.value.trim() || 'Seu estúdio', logo: ob.logo }, 72)));
+    arquivo.addEventListener('change', async e => {
+      const f = e.target.files && e.target.files[0]; if (!f) return;
+      try { ob.logo = await reduzirImagem(f); m.textContent = ''; desenharPerfil(); }
+      catch (err) { m.textContent = err.message; }
+    });
     const form = el('form', { novalidate: true },
-      el('div', { class: 'campo' }, el('label', { for: 'obNome', text: 'Nome do seu estúdio' }), nome, el('small', { text: 'Aparece para os seus clientes. Dá para trocar depois.' })),
+      el('div', { class: 'campo' }, el('label', { for: 'obNome', text: 'Nome do seu estúdio' }), nome, el('small', { text: 'Aparece para os seus clientes.' })),
+      el('div', { class: 'campo' }, el('span', { class: 'rotulo', text: 'Logo (opcional)' }),
+        el('div', { class: 'logo-box' }, previa,
+          el('div', { style: 'display:grid;gap:8px' }, el('label', { class: 'btn', for: 'obLogo', style: 'cursor:pointer', text: 'Escolher imagem' }), arquivo, tirar)),
+        el('small', { text: 'Sem logo, o cliente vê a primeira letra do nome, na cor da marca.' })),
+      el('div', { class: 'campo' }, el('span', { class: 'rotulo', text: 'Cor da marca' }), caixaCores,
+        el('small', { text: 'A página do pedido do seu cliente fica nesta cor.' })),
       el('div', { class: 'campo' }, el('label', { for: 'obWhats', text: 'WhatsApp de atendimento (opcional)' }), whats, el('small', { text: 'O número que o cliente chama pelo botão da página do pedido.' })),
       botao, m);
     form.addEventListener('submit', async ev => {
@@ -1583,15 +1609,16 @@
       if (w && w.length < 10) { m.textContent = 'WhatsApp incompleto: coloque DDD e número.'; return whats.focus(); }
       botao.disabled = true; m.textContent = '';
       try {
-        await CT.pedir('/rest/v1/rpc/ct_criar_meu_estudio', { metodo: 'POST', comLogin: true, corpo: { p_nome: n, p_whatsapp: w } });
+        await CT.pedir('/rest/v1/rpc/ct_criar_meu_estudio', { metodo: 'POST', comLogin: true, corpo: { p_nome: n, p_whatsapp: w, p_cor: ob.cor, p_logo: ob.logo } });
         await iniciar();
-        if (plano() && plano().tem_acesso) aviso('Painel criado! Coloque sua logo, cor e chave Pix.', false, { rotulo: 'Configurar', fn: abrirConfig });
+        if (plano() && plano().tem_acesso) aviso('Painel criado! Se você cobra pelo Pix, coloque a sua chave em Configurações.', false, { rotulo: 'Configurar', fn: abrirConfig });
       } catch (e) { if (/Sem compra/.test(e.message || '')) return semCompra(); m.textContent = erroAmigavel(e); botao.disabled = false; }
     });
     app.replaceChildren(el('section', { class: 'cartao login' },
       el('div', { class: 'marca' }, logoNexo()), el('h1', { text: 'Bem-vindo!' }),
-      el('p', { text: 'Falta só um passo para o seu painel ficar pronto.' }), form,
+      el('p', { text: 'Monte o perfil do seu estúdio. Se quiser mudar algo depois, é só ir em Configurações.' }), form,
       el('button', { class: 'link-txt', type: 'button', style: 'margin-top:12px', text: 'Sair desta conta', onclick: async () => { await CT.sair(); conta = null; modoLogin = 'entrar'; telaLogin(); } })));
+    desenharPerfil();
     nome.focus();
   }
   async function iniciar() {

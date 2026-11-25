@@ -910,7 +910,9 @@ end;
 $$;
 
 -- Conta nova cria o próprio estúdio: só se o e-mail comprou ou foi liberado.
-create or replace function public.ct_criar_meu_estudio(p_nome text, p_whatsapp text default '')
+-- Na primeira vez a pessoa já manda o nome, a cor e (se quiser) a logo do estúdio; depois troca em Configurações.
+drop function if exists public.ct_criar_meu_estudio(text, text);
+create or replace function public.ct_criar_meu_estudio(p_nome text, p_whatsapp text default '', p_cor text default null, p_logo text default null)
 returns json language plpgsql security definer set search_path = public, extensions as $$
 declare novo ct_estudios; em text := ct_email(); teste int; lib ct_liberados;
 begin
@@ -923,8 +925,9 @@ begin
   end if;
   select * into lib from ct_liberados where email = em;
   select dias_teste into teste from ct_plataforma where id = 1;
-  insert into ct_estudios (nome, whatsapp, isento, acesso_ate, assinatura_status)
-  values (btrim(p_nome), coalesce(p_whatsapp, ''), ct_eh_admin() or coalesce(lib.tipo = 'gratis', false),
+  insert into ct_estudios (nome, whatsapp, cor, logo, isento, acesso_ate, assinatura_status)
+  values (btrim(p_nome), coalesce(p_whatsapp, ''), coalesce(upper(nullif(btrim(p_cor), '')), '#6650D9'), coalesce(p_logo, ''),
+    ct_eh_admin() or coalesce(lib.tipo = 'gratis', false),
     case when lib.tipo = 'teste' then now() + make_interval(days => coalesce(lib.dias, 30))
          when coalesce(teste, 0) > 0 then now() + make_interval(days => teste) end,
     case when lib.tipo = 'teste' or coalesce(teste, 0) > 0 then 'teste' else 'nenhuma' end)
